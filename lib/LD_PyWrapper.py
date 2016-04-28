@@ -49,7 +49,6 @@ def callLDSC(sumstats, n_case, n_ctrl):
     print(subprocess.list2cmdline(["python", ldPath + "/ldsc.py"] + ldscOpts))
 
 if __name__ == "__main__":
-    callLDSC("/net/zhao/ql68/GWAS/PD/Data/Data_SimonSanchez_Lite.txt", 1178, 5213)
-    #callLDSC(sys.argv[1], sys.argv[2], sys.argv[3])
+    callLDSC(sys.argv[1], sys.argv[2], sys.argv[3])
 
 
