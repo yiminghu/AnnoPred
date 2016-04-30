@@ -1,0 +1,65 @@
+python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --per_SNP_h2=/dir/h2.txt --out=/dir/xxx
+
+--sumstats: GWAS summary stats, fixed format
+--ref_gt: reference genotype, plink bed format
+--val_gt: validation genotype, plink bed format
+--coord_out: a path and file name for the output of coord_genotypes.py (h5py file)
+--N_case: number of cases in GWAS training (for LDSC)
+--N_ctrl: number of ctrls in GWAS training (for LDSC)
+--P: tuning parameter in (0,1), the proportion of causal snps
+--ld_radius: (optional) an integer, if not provided, use the number of SNPs in common divided by 3000
+--local_ld_prefix: a path and file name for LD file
+--per_SNP_h2: (optional) a path and file name for per-SNP heritability, if not provided, use LDSC with 53 baseline annotations, GenoCanyon and GenoSkyline annotations.
+--out: a path and file name prefix for output
+
+
+
+## input for LDSC (should be fixed files)
+#hapmap3 snp list: w_hm3.snplist
+
+# annotation files (by chromosome, chr = 1,2,...,22):
+# baseline: 
+baseline.chr.annot.gz, baseline.chr.l2.ldscore, baseline.chr.l2.M_5_50
+# GenoCanyon_Func: 
+GenoCanyon_Func.chr.annot.gz, GenoCanyon_Func.chr.l2.ldscore, GenoCanyon_Func.chr.l2.M_5_50
+# GenoSkyline
+Brain: Brain.chr.annot.gz, Brain.chr.l2.ldscore, Brain.chr.l2.M_5_50
+GI: GI.chr.annot.gz, GI.chr.l2.ldscore, GI.chr.l2.M_5_50
+Lung: Lung.chr.annot.gz, Lung.chr.l2.ldscore, Lung.chr.l2.M_5_50
+Heart: Heart.chr.annot.gz, Heart.chr.l2.ldscore, Heart.chr.l2.M_5_50
+Blood: Blood.chr.annot.gz, Blood.chr.l2.ldscore, Blood.chr.l2.M_5_50
+Muscle: Muscle.chr.annot.gz, Muscle.chr.l2.ldscore, Muscle.chr.l2.M_5_50
+Epithelial: Epithelial.chr.annot.gz, Epithelial.chr.l2.ldscore, Epithelial.chr.l2.M_5_50
+
+# weight file for regression
+weights.chr.l2.ldscore.gz
+
+# frequency file
+1000G.mac5eur.chr.frq.gz 1000G.mac5eur.chr.bed 1000G.mac5eur.chr.bim 1000G.mac5eur.chr.fam
+
+
+
+
+################### below are the codes for running LDSC, FYI ##################
+# Step 1 - Prepare the sumstats file #
+python /net/zhao/ql68/Software/ldsc/munge_sumstats.py\
+  --N-cas 1713\
+  --N-con 3978\
+  --merge-alleles /net/zhao/ql68/Software/ldsc/w_hm3.snplist\
+  --sumstats /net/zhao/ql68/GWAS/PD/Data/Data_SimonSanchez_Lite.txt\
+  --out /net/zhao/ql68/Software/ldsc/SummaryStats/PD/PD_SimonSanchez_Curated
+# Step 2 - Partition heritability #
+
+AnnotDIR="/net/zhao/ql68/Software/ldsc/Annotations"
+InputDIR="/net/zhao/ql68/Software/ldsc/Input"
+StatsDIR="/net/zhao/ql68/Software/ldsc/SummaryStats"
+
+python /home2/cj296/COPD/ldsc/ldsc.py\
+  --h2 $StatsDIR/PD/PD_SimonSanchez_Curated.sumstats.gz\
+  --ref-ld-chr $AnnotDIR/EUR/Baseline/baseline.,$AnnotDIR/EUR/GenoCanyon/GenoCanyon_Func.,$AnnotDIR/EUR/GenoSkyline/Brain.,$AnnotDIR/EUR/GenoSkyline/GI.,$AnnotDIR/EUR/GenoSkyline/Lung.,$AnnotDIR/EUR/GenoSkyline/Heart.,$AnnotDIR/EUR/GenoSkyline/Blood.,$AnnotDIR/EUR/GenoSkyline/Muscle.,$AnnotDIR/EUR/GenoSkyline/Epithelial.\
+  --w-ld-chr $InputDIR/EUR/weights/weights.\
+  --frqfile-chr $InputDIR/EUR/genotype/1000G.mac5eur.\
+  --overlap-annot\
+  --print-coefficients\
+  --out /net/zhao/ql68/Software/ldsc/Results/PD/PD_SimonSanchez_Curated_GC1_GS7_withBaseline
+
