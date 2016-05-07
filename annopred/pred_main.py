@@ -52,7 +52,7 @@ def pred_accuracy(y_true, y_pred):
         return cor
 
 
-def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_training=None, gm=None, gm_ld_radius=None):
+def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_training=None):
     """
     Calculates LD tables, and the LD score in one go...
     """
@@ -74,39 +74,6 @@ def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_train
             lds_i = sp.sum(r2s - (1-r2s) / (n-2),dtype='float32')
             #lds_i = sp.sum(r2s - (1-r2s)*empirical_null_r2)
             ld_scores[snp_i] =lds_i
-    else:
-        assert gm is not None, 'Genetic map is missing.'
-        window_sizes = []
-        ld_boundaries =[]
-        for snp_i, snp in enumerate(snps):
-            curr_cm = gm[snp_i] 
-            
-            #Now find lower boundary
-            start_i = snp_i
-            min_cm = gm[snp_i]
-            while start_i>0 and min_cm>curr_cm-gm_ld_radius:
-                start_i = start_i -1
-                min_cm = gm[start_i]
-            
-            #Now find the upper boundary
-            stop_i = snp_i
-            max_cm = gm[snp_i]
-            while stop_i>0 and max_cm<curr_cm+gm_ld_radius:
-                stop_i = stop_i +1
-                max_cm = gm[stop_i]
-            
-            ld_boundaries.append([start_i,stop_i])    
-            curr_ws = stop_i-start_i
-            window_sizes.append(curr_ws)
-            assert curr_ws>0, 'Some issues with the genetic map'
-
-            X = snps[start_i: stop_i]
-            D_i = sp.dot(snp, X.T) / n
-            r2s = D_i ** 2
-            ld_dict[snp_i] = D_i
-            lds_i = sp.sum(r2s - (1-r2s) / (n-2),dtype='float32')
-            #lds_i = sp.sum(r2s - (1-r2s)*empirical_null_r2)
-            ld_scores[snp_i] =lds_i
         
         avg_window_size=sp.mean(window_sizes)
         print 'Average # of SNPs in LD window was %0.2f'%avg_window_size
@@ -118,7 +85,6 @@ def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_train
     
     if ld_window_size>0:
         ref_ld_matrices = []
-        inf_shrink_matrices = []
         for i, wi in enumerate(range(0, m, ld_window_size)):
             start_i = wi
             stop_i = min(m, wi + ld_window_size)
@@ -126,29 +92,15 @@ def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_train
             X = snps[start_i: stop_i]
             D = sp.dot(X, X.T) / n
             ref_ld_matrices.append(D)
-            if h2!=None and n_training!=None:
-                A = ((m / h2) * sp.eye(curr_window_size) + (n_training / (1)) * D)
-                A_inv = linalg.pinv(A)
-                inf_shrink_matrices.append(A_inv)
         ret_dict['ref_ld_matrices']=ref_ld_matrices
-        if h2!=None and n_training!=None:
-            ret_dict['inf_shrink_matrices']=inf_shrink_matrices
     return ret_dict
 
 
-def ldpred_inf(beta_hats, pr_sigi, n=1000, inf_shrink_matrices=None, 
-               reference_ld_mats=None, genotypes=None, ld_window_size=100, verbose=False):
+def annopred_inf(beta_hats, pr_sigi, n=1000, reference_ld_mats=None, ld_window_size=100):
     """
-    Apply the infinitesimal shrink w LD (which requires LD information).
-    
-    If reference_ld_mats are supplied, it uses those, otherwise it uses the LD in the genotype data.
-    
-    If genotypes are supplied, then it assumes that beta_hats and the genotypes are synchronized.
-
+    infinitesimal model with snp-specific heritability derived from annotation
+    used as the initial values for MCMC of non-infinitesimal model
     """
-    if verbose:
-        print 'Doing LD correction'
-    t0 = time.time()
     num_betas = len(beta_hats)
     updated_betas = sp.empty(num_betas)
     m = len(beta_hats)
@@ -158,37 +110,16 @@ def ldpred_inf(beta_hats, pr_sigi, n=1000, inf_shrink_matrices=None,
         stop_i = min(num_betas, wi + ld_window_size)
         curr_window_size = stop_i - start_i
         Li = 1.0/pr_sigi[start_i: stop_i]
-        if inf_shrink_matrices!=None:
-            print 'SHIT HAPPENS'
-            A_inv = inf_shrink_matrices[i]
-        else:
-            if reference_ld_mats != None:
-                D = reference_ld_mats[i]
-            else:
-                if genotypes != None:
-                    X = genotypes[start_i: stop_i]
-                    num_indivs = X.shape[1]
-                    D = sp.dot(X, X.T) / num_indivs
-                else:
-                    raise NotImplementedError
-            #A = ((m / h2) * sp.eye(curr_window_size) + (n / (1)) * D)
-            A = (n/(1))*D + sp.diag(Li)
-            A_inv = linalg.pinv(A)
+        D = reference_ld_mats[i]
+        A = (n/(1))*D + sp.diag(Li)
+        A_inv = linalg.pinv(A)
         updated_betas[start_i: stop_i] = sp.dot(A_inv / (1.0/n) , beta_hats[start_i: stop_i])  # Adjust the beta_hats
 
-        if verbose:
-            sys.stdout.write('\b\b\b\b\b\b\b%0.2f%%' % (100.0 * (min(1, float(wi + 1) / num_betas))))
-            sys.stdout.flush()
-
-    t1 = time.time()
-    t = (t1 - t0)
-    if verbose:
-        print '\nIt took %d minutes and %0.2f seconds to perform the Infinitesimal LD shrink' % (t / 60, t % 60)
     return updated_betas
 
 
-def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_prefix=None, ps=None, 
-               n=None, h2=None, num_iter=None, verbose=False, zero_jump_prob=0.05, burn_in=5, PRF=None):
+def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_prefix=None, ps=None, 
+               n=None, h2=None, num_iter=None, zero_jump_prob=0.05, burn_in=5, PRF=None):
     """
     Calculate LDpred for a genome
     """    
@@ -211,7 +142,7 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
     chrom_ld_dict = ld_dict['chrom_ld_dict']
     chrom_ref_ld_mats = ld_dict['chrom_ref_ld_mats']
         
-    print 'Applying LDpred with LD radius: %d' % ld_radius
+    print 'LD radius used: %d' % ld_radius
     results_dict = {}
     num_snps = 0
     sum_beta2s = 0
@@ -227,12 +158,12 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
         
     L = ld_scores_dict['avg_gw_ld_score']
     chi_square_lambda = sp.mean(n * sum_beta2s / float(num_snps))
-    print 'Genome-wide lambda inflation:', chi_square_lambda,
+#    print 'Genome-wide lambda inflation:', chi_square_lambda,
     print 'Genome-wide mean LD score:', L
     gw_h2_ld_score_est = max(0.0001, (max(1, chi_square_lambda) - 1) / (n * (L / num_snps)))
     print 'Estimated genome-wide heritability:', gw_h2_ld_score_est
     
-    assert chi_square_lambda>1, 'Something is wrong with the GWAS summary statistics.  Perhaps there were issues parsing of them, or the given GWAS sample size (N) was too small. Either way, lambda (the mean Chi-square statistic) is too small.  '
+    assert chi_square_lambda>1, 'Check the summary statistic file'
     if h2 is None:
         h2 = gw_h2_ld_score_est
     print h2
@@ -240,11 +171,11 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
     sig_12 = (1.0)/n     #######################
     pr_sig = {}
     pr_p = {}
-    LDpred_inf_chrom_dict = {}
-    print 'Calculating LDpred-inf weights'
+    annopred_inf_chrom_dict = {}
+    print 'Calculating initial values for MCMC using infinitesimal model'
     for chrom_str in chromosomes_list:
         if chrom_str in cord_data_g.keys():
-            print 'Calculating scores for Chromosome %s'%((chrom_str.split('_'))[1])           
+            print 'Calculating posterior betas for Chromosome %s'%((chrom_str.split('_'))[1])           
             g = cord_data_g[chrom_str]
 
             #Filter monomorphic SNPs
@@ -264,14 +195,14 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
                     pr_p[chrom_str] = sp.copy(prf_pi_chri)
                     pr_sig[chrom_str] = sp.copy(prf_sigi2_chri)
                 else:
-                    print 'sorting prior files'
+                    print 'Order of SNPs does not match, sorting prior files'
                     pr_p[chrom_str] = sp.zeros(len(sids))
                     pr_sig[chrom_str] = sp.zeros(len(sids))
                     for i, sid in enumerate(sids):
                         pr_p[chrom_str][i] = prf_pi_chri[prf_sids_chri==sid]
                         pr_sig[chrom_str][i] = prf_sigi2_chri[prf_sids_chri==sid]
             else:
-                print 'extracting prior files'
+                print 'More SNPs found in prior file, extracting SNPs from prior files'
                 pr_p[chrom_str] = sp.zeros(len(sids))
                 pr_sig[chrom_str] = sp.zeros(len(sids))
                 for i, sid in enumerate(sids):
@@ -282,9 +213,8 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
                 h2_chrom = sp.sum(pr_sig[chrom_str])            
             else:
                 h2_chrom = gw_h2_ld_score_est * (n_snps / float(num_snps))
-            start_betas = ldpred_inf(pval_derived_betas, pr_sigi=pr_sig[chrom_str], genotypes=None, reference_ld_mats=chrom_ref_ld_mats[chrom_str], 
-                                                n=n, ld_window_size=2*ld_radius, verbose=False)
-            LDpred_inf_chrom_dict[chrom_str]=start_betas
+            start_betas = annopred_inf(pval_derived_betas, pr_sigi=pr_sig[chrom_str], reference_ld_mats=chrom_ref_ld_mats[chrom_str], n=n, ld_window_size=2*ld_radius)
+            annopred_inf_chrom_dict[chrom_str]=start_betas
     
     
     for p in ps:
@@ -295,8 +225,8 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
         if out_file_prefix:
             #Preparing output files
             raw_effect_sizes = []
-            ldpred_effect_sizes = []
-            ldpred_inf_effect_sizes = []
+            annopred_effect_sizes = []
+            annopred_inf_effect_sizes = []
             out_sids = []
             chromosomes = []
             out_positions = []
@@ -352,9 +282,9 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
                 else:
                     h2_chrom = gw_h2_ld_score_est * (n_snps / float(num_snps))
                 #print 'Prior parameters: p=%0.3f, n=%d, m=%d, h2_chrom=%0.4f' % (p, n, n_snps, h2_chrom)
-                res_dict = ldpred_gibbs(pval_derived_betas, Pi = prf_pi_chri_sorted, Sigi2=prf_sigi2_chri_sorted, sig_12=sig_12, h2=h2_chrom, n=n, ld_radius=ld_radius,
-                                        verbose=verbose, num_iter=num_iter, burn_in=burn_in, ld_dict=chrom_ld_dict[chrom_str],
-                                        start_betas=LDpred_inf_chrom_dict[chrom_str], zero_jump_prob=zero_jump_prob)            
+                res_dict = infinitesimal_mcmc(pval_derived_betas, Pi = prf_pi_chri_sorted, Sigi2=prf_sigi2_chri_sorted, sig_12=sig_12, h2=h2_chrom, n=n, ld_radius=ld_radius,
+                                        num_iter=num_iter, burn_in=burn_in, ld_dict=chrom_ld_dict[chrom_str],
+                                        start_betas=annopred_inf_chrom_dict[chrom_str], zero_jump_prob=zero_jump_prob)            
                 updated_betas = res_dict['betas']
                 updated_inf_betas = res_dict['inf_betas']
                 sum_sqr_effects = sp.sum(updated_betas ** 2)
@@ -365,8 +295,8 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
                 print 'Calculating scores for Chromosome %s'%((chrom_str.split('_'))[1])
                 updated_betas = updated_betas / (snp_stds.flatten())
                 updated_inf_betas = updated_inf_betas / (snp_stds.flatten())
-                ldpred_effect_sizes.extend(updated_betas)
-                ldpred_inf_effect_sizes.extend(updated_inf_betas)
+                annopred_effect_sizes.extend(updated_betas)
+                annopred_inf_effect_sizes.extend(updated_inf_betas)
                 if has_phenotypes:
                     prs = sp.dot(updated_betas, raw_snps)
                     prs_inf = sp.dot(updated_inf_betas, raw_snps)
@@ -411,7 +341,7 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
             if corr_inf<0:
                 risk_scores_pval_derived_inf = -1* risk_scores_pval_derived_inf
             auc_inf = pred_accuracy(y,risk_scores_pval_derived_inf)
-            print 'LDpred-inf AUC for the whole genome was: %0.4f'%auc_inf
+            print 'AnnodPred-inf AUC for the whole genome was: %0.4f'%auc_inf
             out_inf.append('AUC for the whole genome was: '+str(auc_inf)+'\n')
     
             sp.savetxt('%s_y_'%(out_file_prefix)+str(p)+'.txt',y)
@@ -437,35 +367,26 @@ def ldpred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file_p
         
         weights_out_file = '%s_non_inf_betas_'%(out_file_prefix)+str(p)+'.txt' ###################################
         with open(weights_out_file,'w') as f:
-            f.write('chrom    pos    sid    nt1    nt2    raw_beta     ldpred_beta\n')
-            for chrom, pos, sid, nt, raw_beta, ldpred_beta in it.izip(chromosomes, out_positions, out_sids, out_nts, raw_effect_sizes, ldpred_effect_sizes):
+            f.write('chrom    pos    sid    nt1    nt2    raw_beta     AnnoPred_beta\n')
+            for chrom, pos, sid, nt, raw_beta, annopred_beta in it.izip(chromosomes, out_positions, out_sids, out_nts, raw_effect_sizes, annopred_effect_sizes):
                 nt1,nt2 = nt[0],nt[1]
-                f.write('%s    %d    %s    %s    %s    %0.4e    %0.4e\n'%(chrom, pos, sid, nt1, nt2, raw_beta, ldpred_beta))
+                f.write('%s    %d    %s    %s    %s    %0.4e    %0.4e\n'%(chrom, pos, sid, nt1, nt2, raw_beta, annopred_beta))
     
         weights_out_file = '%s_inf_betas_'%(out_file_prefix)+str(p)+'.txt'
         with open(weights_out_file,'w') as f:
-            f.write('chrom    pos    sid    nt1    nt2    raw_beta    ldpred_inf_beta \n')
-            for chrom, pos, sid, nt, raw_beta, ldpred_inf_beta in it.izip(chromosomes, out_positions, out_sids, out_nts, raw_effect_sizes, ldpred_inf_effect_sizes):
+            f.write('chrom    pos    sid    nt1    nt2    raw_beta    AnnoPred_inf_beta \n')
+            for chrom, pos, sid, nt, raw_beta, annopred_inf_beta in it.izip(chromosomes, out_positions, out_sids, out_nts, raw_effect_sizes, annopred_inf_effect_sizes):
                 nt1,nt2 = nt[0],nt[1]
-                f.write('%s    %d    %s    %s    %s    %0.4e    %0.4e\n'%(chrom, pos, sid, nt1, nt2, raw_beta, ldpred_inf_beta))
+                f.write('%s    %d    %s    %s    %s    %0.4e    %0.4e\n'%(chrom, pos, sid, nt1, nt2, raw_beta, annopred_inf_beta))
 
 
         
-def ldpred_gibbs(beta_hats, Pi, Sigi2, sig_12, genotypes=None, start_betas=None, h2=None, n=1000, ld_radius=100,
-                 num_iter=60, burn_in=10, zero_jump_prob=0.05, ld_dict_file_prefix=None, 
-                 ld_dict=None, reference_ld_mats=None, ld_boundaries=None, verbose=False):
+def infinitesimal_mcmc(beta_hats, Pi, Sigi2, sig_12, start_betas=None, h2=None, n=1000, ld_radius=100, num_iter=60, burn_in=10, zero_jump_prob=0.05, ld_dict=None):
     """
-    LDpred (Gibbs Sampler) 
+    MCMC of non-infinitesimal model
     """
-    t0 = time.time()
     m = len(beta_hats)
     
-    #If no starting values for effects were given, then use the infinitesimal model starting values.
-    if start_betas is None:
-        print 'Initializing LDpred effects with posterior mean LDpred-inf effects.'
-        print 'Calculating LDpred-inf effects.'
-        start_betas = LDpred_inf.ldpred_inf(beta_hats, genotypes=genotypes, reference_ld_mats=reference_ld_mats, 
-                                            h2=h2, n=n, ld_window_size=2*ld_radius, verbose=False)
     curr_betas = sp.copy(start_betas)
     curr_post_means = sp.zeros(m)
     avg_betas = sp.zeros(m)
@@ -473,14 +394,6 @@ def ldpred_gibbs(beta_hats, Pi, Sigi2, sig_12, genotypes=None, start_betas=None,
     # Iterating over effect estimates in sequential order
     iter_order = sp.arange(m)
     
-    # Setting up the marginal Bayes shrink
-    #Mp = m * p
-    #hdmp = Sigi2[snp_i]#(h2 / Mp)
-    #hdmpn = hdmp + sig_12#1.0 / n
-    #hdmp_hdmpn = (hdmp / hdmpn)
-    #c_const = (Pi[snp_i] / sp.sqrt(hdmpn))
-    #d_const = (1 - Pi[snp_i]) / (sp.sqrt(1.0 / n))
-
     for k in range(num_iter):  #Big iteration
 
         #Force an alpha shrink if estimates are way off compared to heritability estimates.  (Improves MCMC convergence.)
@@ -538,18 +451,12 @@ def ldpred_gibbs(beta_hats, Pi, Sigi2, sig_12, genotypes=None, start_betas=None,
                     proposed_beta = 0
         
                 curr_betas[snp_i] = proposed_beta  #UPDATE BETA
-        if verbose:
-            sys.stdout.write('\b\b\b\b\b\b\b%0.2f%%' % (100.0 * (min(1, float(k + 1) / num_iter))))
-            sys.stdout.flush()
 
         if k >= burn_in:
             avg_betas += curr_post_means #Averaging over the posterior means instead of samples.
 
     avg_betas = avg_betas/float(num_iter-burn_in)
-    t1 = time.time()
-    t = (t1 - t0)
-    if verbose:
-        print '\nTook %d minutes and %0.2f seconds' % (t / 60, t % 60)
+
     return {'betas':avg_betas, 'inf_betas':start_betas}
 
 
@@ -560,6 +467,8 @@ p_dict = {'coord':None, 'ld_radius':None, 'local_ld_file_prefix':None, 'hfile':N
 
 def main(p_dict):
     local_ld_dict_file = '%s_ldradius%d.pickled.gz'%(p_dict['local_ld_file_prefix'], p_dict['ld_radius'])
+    if len(p_dict['PS'])==1:
+        p_dict['PS'] = [p_dict['PS']]
     if not os.path.isfile(local_ld_dict_file):
         df = h5py.File(p_dict['coord'])
                  
@@ -644,11 +553,11 @@ def main(p_dict):
     out_h2_prefix = p_dict['out']+'_h2'
     H2 = sp.sum(prf_sigi2)
     if p_dict['user_h2']:
-        ldpred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, verbose=False, PRF = prf)
+        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
     else:
-        ldpred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=p_dict['H2'], verbose=False, PRF = prf)
+        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=p_dict['H2'], PRF = prf)
 
            
 ##################### using pfile as prior #######################
@@ -675,8 +584,8 @@ def main(p_dict):
         prf['pi'] = prf_pi
         prf['sigi2'] = prf_sigi2
         H2 = sp.sum(prf_sigi2)
-        out_pT_prefix = p_dict['out']+'_p0'
-        ldpred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_pT_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                        ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, verbose=False, PRF = prf)
+        out_pT_prefix = p_dict['out']+'_pT'
+        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_pT_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                        ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
 
         
