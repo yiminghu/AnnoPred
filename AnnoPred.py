@@ -156,10 +156,10 @@ def pdict_pred_ldsc(pdict):
   d['user_h2'] = False
   return d
 
-# Returns pdict used by Pred when using user H2
+# Returns pdict used by Pred when using user h2
 def pdict_pred_user(pdict):
   d = pdict_pred_partial(pdict)
-  d['hfile'] = pdict['user_h2']
+  d['hfile'] = pdict['user_hfile']
   d['pfile'] = None
   d['H2'] = ???
   d['user_h2'] = True
@@ -193,9 +193,9 @@ def main(pdict):
 
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
-    pdict['user_h2'] = tmp(pdict, "user_h2.txt")
+    pdict['user_hfile'] = tmp(pdict, "user_hfile.txt")
     prior_generating.generate_h2_from_user(
-        pdict['per_SNP_h2'], pdict['coord_out'], pdict['user_h2'])
+        pdict['per_SNP_h2'], pdict['coord_out'], pdict['user_hfile'])
     pred_main.main(pdict_pred_user(pdict))
 
 

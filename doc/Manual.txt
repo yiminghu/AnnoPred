@@ -1,4 +1,4 @@
-python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --per_SNP_h2=/dir/h2.txt --out=/dir/xxx
+python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --per_SNP_h2=/dir/h2.txt --out=/dir/xxx --temp_dir=/dir/tmp
 
 --sumstats: GWAS summary stats, fixed format
 --ref_gt: reference genotype, plink bed format
@@ -11,7 +11,7 @@ python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val
 --local_ld_prefix: a path and file name for LD file
 --per_SNP_h2: (optional) a path and file name for per-SNP heritability, if not provided, use LDSC with 53 baseline annotations, GenoCanyon and GenoSkyline annotations.
 --out: a path and file name prefix for output
-
+--temp_dir: output directory for temporary files
 
 
 ## input for LDSC (should be fixed files)
