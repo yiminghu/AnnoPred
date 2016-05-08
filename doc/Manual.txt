@@ -1,3 +1,32 @@
+######### whole procedure and parameter list #########
+
+# the parameter list for AnnoPred #
+p_dict_AnnoPred ={'sumstats':'GWAS_sumstats.txt', 'Ncase':n1, 'Nctrl':n2, 'PS':0.3, 'user_h2_file':None, 'gf':'validation_data', 'vgf':'validation_data', 'vbim':'validation_data.bim', 'out':output_path}
+# assume all the reference files are in the ref/ and we save all the files generated during the process to the output path
+
+# 1. call pre_sumstats.py here #
+pre_sumstats.get_1000G_snps(p_dict_AnnoPred['sumstats'], 'ref/1000G_SNP_info.h5', p_dict_AnnoPred['out']+'_trimmed_sumstats.txt')
+
+# 2. call coord_trimmed.py #
+p_dict_coord_trimmed = {'gf':p_dict_AnnoPred['gf'], 'vgf':p_dict_AnnoPred['vgf'], 'ssf':p_dict_AnnoPred['out']+'_trimmed_sumstats.txt', 'out':p_dict_AnnoPred['out']+'_coord_output', 'vbim':p_dict_AnnoPred['vbim'], 'N':p_dict_AnnoPred['Ncase']+p_dict_AnnoPred['Nctrl'], 'ssf_format':'BASIC', 'gmdir':None, 'indiv_list':None, 'gf_format':'PLINK', 'skip_coordination':False}
+coord_trimmed.main(p_dict_coord_trimmed)
+
+# 3. call ldsc here, I am not familiar with this part, but I assume this part will use p_dict_AnnoPred['sumstats'], p_dict_AnnoPred['Ncase'], p_dict_AnnoPred['Nctrl'] and some files in 'ref/'
+# and I assume the output would be saved to p_dict_AnnoPred['out']+'_LDSC.results'
+
+# 4. call prior_generating.py #
+if p_dict_AnnoPred['user_h2_file'] is not None:
+	res = prior_generating.generate_h2_from_user(p_dict_AnnoPred['user_h2_file'],p_dict_coord_trimmed['out'], p_dict_AnnoPred['out']+'_trimmed_user_h2.txt')
+	p_dict_pred_main = {'coord':p_dict_coord_trimmed['out'], 'ld_radius':res[1], 'local_ld_file_prefix':p_dict_AnnoPred['out']+'_local_ld', 'hfile':None, 'pfile':None, 'PS':p_dict_AnnoPred['PS'], 'out':p_dict_AnnoPred['out'], 'N':p_dict_AnnoPred['Ncase']+p_dict_AnnoPred['Nctrl'], 'num_iter': 60, 'H2':res[0], 'user_h2':p_dict_AnnoPred['out']+'_trimmed_user_h2.txt'}
+else:
+	res = prior_generating.generate_h2_pT('ref/GC1_GS7_Baseline53.h5', 'ref/1000G_SNP_info.h5', p_dict_coord_trimmed['out'], LDSC_results_file_from_step_3, p_dict_AnnoPred['out']+'_h2_file.txt', p_dict_AnnoPred['PS'], p_dict_AnnoPred['out']+'_pT')
+	p_dict_pred_main = {'coord':p_dict_coord_trimmed['out'], 'ld_radius':res, 'local_ld_file_prefix':p_dict_AnnoPred['out']+'_local_ld', 'hfile':p_dict_AnnoPred['out']+'_h2_file.txt', 'pfile':p_dict_AnnoPred['out']+'_pT_'+str(p_dict_AnnoPred['PS'])+'_file.txt', 'PS':p_dict_AnnoPred['PS'], 'out':p_dict_AnnoPred['out'], 'N':p_dict_AnnoPred['Ncase']+p_dict_AnnoPred['Nctrl'], 'num_iter': 60, 'H2':None, 'user_h2':None}
+
+# 5. call pred_main.py #
+pred_main.main(p_dict_pred_main)
+
+
+################################################# detailed function usage ################################################## 
 ######### pre_sumstats #########
 pre_sumstats.py contains one function extracting a subset of rows from the original input summary statistics
 arguments of get_1000G_snps
