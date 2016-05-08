@@ -1,17 +1,84 @@
-python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --per_SNP_h2=/dir/h2.txt --out=/dir/xxx
+######### pre_sumstats #########
+pre_sumstats.py contains one function extracting a subset of rows from the original input summary statistics
+arguments of get_1000G_snps
+sumstats: input GWAS summary stats, fixed format
+ref: a reference file contains chromosome, position of 1000Genome SNPs, in h5py format = '/net/zhao/yh367/Data_updated/1000G_SNP.info.h5'
+out_file: output directory, the output summary stats has the same format and will be used as input of coord_trimmed               
 
---sumstats: GWAS summary stats, fixed format
---ref_gt: reference genotype, plink bed format
---val_gt: validation genotype, plink bed format
---coord_out: a path and file name for the output of coord_genotypes.py (h5py file)
---N_case: number of cases in GWAS training (for LDSC)
---N_ctrl: number of ctrls in GWAS training (for LDSC)
---P: tuning parameter in (0,1), the proportion of causal snps
---ld_radius: (optional) an integer, if not provided, use the number of SNPs in common divided by 3000
---local_ld_prefix: a path and file name for LD file
---per_SNP_h2: (optional) a path and file name for per-SNP heritability, if not provided, use LDSC with 53 baseline annotations, GenoCanyon and GenoSkyline annotations.
---out: a path and file name prefix for output
 
+######### coord_trimmed #########
+python coord_trimmed.py --gf=ref_genotype --ssf=summstats.txt --ssf_format=BASIC --N=sample_size --out=/output_dir/prefix --vgf=val_genotype --vbim=val_genotype.bim
+--gf: reference genotype data path and prefix (plink bed/bim/fam)
+--ssf: GWAS summary stats
+--ssf_format: format of GWAS summary stats, in our program we will use the 'BASIC' format only
+--N: sample size of the GWAS
+--out: output path and prefix
+--vgf: validation data path and prefix (plink bed/bim/fam)
+--vbim: validation data bim file
+
+## example ##
+cd /net/zhao/yh367/GenoPred_test
+python coord_trimmed.py --gf=validation_data --ssf=GWAS_sumstats.txt --ssf_format=BASIC --N=5691 --out=coord_output --vgf=validation_data --vbim=validation_data.bim
+
+
+######### generating priors #########
+prior_generating.py contains two functions: generate_h2_pT and generate_h2_from_user
+generate_h2_pT generates two prior files from LDSC output and some fixed annotation files. But we might need to work on the way of saving and reading these fixed files since it currently takes pretty long and large memory.
+arguments of generate_h2_pT
+annot_file: a fixed file, a large matrix recording the functional regions SNPs fall in; row: SNP, col: functional region, 1 means in the region, 0 means not in the region
+snp_chr_mapping_file: a fixed file, a matrix recording position information of SNPs, col: Chr, SNP_id
+h5py_file: the h5py file generated in coord_genotypes.py
+LDSC_results_file: output of LD score regression
+output_h2: the output path and name of the h2 prior files
+PS: a scalar ranging from 0 to 1, a tuning parameter
+output_pT: the output path and name of the pT prior files
+This function will generate two file
+hfile: row: SNPs, col: Chr, SNP_id, heritability
+pfile: row: SNPs, col: Chr, SNP_id, pT, heritability
+
+generate_h2_from_user generates one prior file from a per-SNP heritability estimation provided by users.
+arguments of generate_h2_from_user
+user_provided_h2: path to the a per-SNP heritability estimation provided by users, row: SNPs, col: Chr, SNP_id, heritability, no header 
+h5py_file: the h5py file generated in coord_genotypes.py
+output: the path and name for output file
+This function will generate one files row: SNPs, col: Chr, SNP_id, heritability
+
+## example ##
+import prior_generating
+# specify file paths #
+annot_file = '/net/zhao/yh367/GenoPred_test/GC1_GS7_Baseline53.txt'
+snp_chr_mapping_file = '/net/zhao/yh367/GenoPred_test/CHR_SNP.txt'
+h5py_file = '/net/zhao/yh367/GenoPred_test/coord_output'
+LDSC_results_file = '/net/zhao/ql68/Software/ldsc/Results/PD/PD_SimonSanchez_Curated_GC1_GS7_withBaseline.results'
+output_h2 = '/net/zhao/yh367/GenoPred_test/h2_file.txt'
+PS = 0.3
+output_pT = '/net/zhao/yh367/GenoPred_test/'+'pT'
+
+# Two GenoPred priors #
+prior_generating.generate_h2_pT(annot_file=annot_file, snp_chr_mapping_file=snp_chr_mapping_file, h5py_file=h5py_file, LDSC_results_file=LDSC_results_file, output_h2=output_h2, PS=PS, output_pT=output_pT)
+
+# User defined h2 file #
+user_provided_h2 = '/net/zhao/yh367/GenoPred_test/h2_file.txt'
+generate_h2_from_user(user_provided_h2=user_provided_h2, h5py_file=h5py_file, output='user_h2.txt')
+
+
+######## main program -- AnnoPred #########
+python pred_main.py --coord=h5py_file --ld_radius=R --local_ld_file_prefix=test_ld --hfile=h2_file --pfile=pT_file --PS=p0 --N=n --out=test_output N=sample_size --num_iter=ni --H2=user_total_h2 --user_h2==user_file
+--coord: h5py file output by cord_trimmed
+--ld_radius: a parameter provided by user or by default a number decided by the total number of SNPs for prediction (can be decided from previous step)
+--local_ld_file_prefix: specify a prefix for local ld file (for one dataset the program will generate a ld file using provided prefix on the first run)
+--hfile: the path of GenoPred h2 file
+--pfile: the path of GenoPred pT file
+--PS: parameter p0 (provided by user)
+--N: sample size of the GWAS
+--out: output path and prefix
+--num_iter: number of iterations for MCMC, by default 60
+--H2: the total heritability of user provided file (sum of heritability of each SNP)
+--user_h2: the user provided heritability file
+
+## example ##
+cd /net/zhao/yh367/GenoPred_test/
+python pred_main.py --coord=coord_output --ld_radius=145 --local_ld_file_prefix=test_ld --hfile=h2_file.txt --pfile=pd_p0_0.03.txt --PS=0.03 --N=5691 --out=test_output
 
 
 ## input for LDSC (should be fixed files)
