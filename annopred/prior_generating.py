@@ -38,7 +38,7 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
             pval_derived_betas = pval_derived_betas[ok_snps_filter]
             sids = g['sids'][...]
             SNPids = np.append(SNPids,sids[ok_snps_filter])
-    
+    num_snps = len(SNPids)
     ### overlap with SNP in annot files ###
     stt1 = np.in1d(snp_chr[:,2],SNPids)
     ant1 = annot[stt1]
@@ -121,6 +121,8 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
         ff = open(output_pT+'_'+str(ps)+'_file.txt',"w")
         ff.writelines(pT_out)
         ff.close()
+
+    return math.ceil(num_snps/3000.0)
 
 
 
