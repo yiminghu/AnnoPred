@@ -13,6 +13,8 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
     # generate two sets of prior files: one h2 file corresponding to the first prior in paper
     # a set of pT prior files corresponding to the input PS values
     ### load the fixed input file ###
+    if len(PS)==1:
+        PS = [PS]
     h5f1 = h5py.File(annot_file,'r')
     annot = h5f1['annot'][:]
     h5f1.close()
@@ -38,7 +40,7 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
             pval_derived_betas = pval_derived_betas[ok_snps_filter]
             sids = g['sids'][...]
             SNPids = np.append(SNPids,sids[ok_snps_filter])
-    
+    num_snps = len(SNPids)
     ### overlap with SNP in annot files ###
     stt1 = np.in1d(snp_chr[:,2],SNPids)
     ant1 = annot[stt1]
@@ -122,6 +124,7 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
         ff.writelines(pT_out)
         ff.close()
 
+    return math.ceil(num_snps/3000.0)
 
 
 
@@ -149,7 +152,7 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
             pval_derived_betas = pval_derived_betas[ok_snps_filter]
             sids = g['sids'][...]
             SNPids = np.append(SNPids,sids[ok_snps_filter])
-    
+    num_snps = len(SNPids)
     ### overlap with SNP in annot files ###
     stt1 = np.in1d(user_h2[:,1],SNPids)
     user_h2 = user_h2[stt1]
@@ -172,7 +175,8 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
     ff = open(output,"w")
     ff.writelines(h2_out)
     ff.close()
-    return np.sum(user_h2[:,2])
+    return [np.sum(user_h2[:,2]), math.ceil(num_snps/3000.0)]
+
  
  
 #annot_file = '/net/zhao/yh367/Data_updated/GC1_GS7_Baseline53.h5'
@@ -187,3 +191,9 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
 #generate_h2_pT(annot_file=annot_file, snp_chr_mapping_file=snp_chr_mapping_file, h5py_file=h5py_file, LDSC_results_file=LDSC_results_file, output_h2=output_h2, PS=PS, output_pT=output_pT)
 
 #generate_h2_from_user(user_provided_h2=user_provided_h2, h5py_file=h5py_file, output='user_h2.txt')
+
+
+
+
+
+

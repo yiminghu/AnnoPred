@@ -1,17 +1,17 @@
-python GenoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --per_SNP_h2=/dir/h2.txt --out=/dir/xxx --temp_dir=/dir/tmp
-
---sumstats: GWAS summary stats, fixed format
---ref_gt: reference genotype, plink bed format
---val_gt: validation genotype, plink bed format
---coord_out: a path and file name for the output of coord_genotypes.py (h5py file)
---N_case: number of cases in GWAS training (for LDSC)
---N_ctrl: number of ctrls in GWAS training (for LDSC)
---P: tuning parameter in (0,1), the proportion of causal snps
---ld_radius: (optional) an integer, if not provided, use the number of SNPs in common divided by 3000
---local_ld_prefix: a path and file name for LD file
---per_SNP_h2: (optional) a path and file name for per-SNP heritability, if not provided, use LDSC with 53 baseline annotations, GenoCanyon and GenoSkyline annotations.
---out: a path and file name prefix for output
---temp_dir: output directory for temporary files
+python AnnoPred.py --sumstats=/dir/input.txt --ref_gt=/dir/ref --val_gt=/dir/val --coord_out=/dir/coord --N_case=Nc --N_ctrl=Ncl --P=p --ld_radius=r --local_ld_prefix=xxx --user_h2=/dir/user_h2.txt --temp_dir=/dir/xxx --out=/dir/xxx
+#--sumstats: GWAS summary stats, fixed format
+#--ref_gt: reference genotype, plink bed format
+#--val_gt: validation genotype, plink bed format
+#--coord_out: a path and file name for the output of coord_trimmed.py (h5py file), if not provided save to 
+#--N_case: number of cases in GWAS training (for LDSC)
+#--N_ctrl: number of ctrls in GWAS training (for LDSC)
+#--P: tuning parameter in (0,1), the proportion of causal snps
+#--local_ld_prefix: a path and file name for LD file
+#--out: a path and file name prefix for output
+#--num_iter: (optional) an integer, the number of iterations for mcmc, if not specified, use 60
+#--ld_radius: (optional) an integer, if not provided, use the number of SNPs in common divided by 3000 (calculated later)
+#--user_h2: (optional) a path and file name for user-provided heritability, if not provided, use LDSC with 53 baseline annotations, GenoCanyon and GenoSkyline annotations to generate two sets of priors.
+#--temp_dir: (optional) Directory to output all temporary files. If not specified, will use the current directory.
 
 
 ## input for LDSC (should be fixed files)

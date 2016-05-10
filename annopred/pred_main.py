@@ -462,7 +462,7 @@ def infinitesimal_mcmc(beta_hats, Pi, Sigi2, sig_12, start_betas=None, h2=None, 
 
 """
 p_dict = {'coord':None, 'ld_radius':None, 'local_ld_file_prefix':None, 'hfile':None, 'pfile':None, 'PS':None, 'out':None,
-          'N':None, 'num_iter': 60, 'H2':None, 'user_h2':False}
+          'N':None, 'num_iter': 60, 'H2':None, 'user_h2':None}
 """
 
 def main(p_dict):
@@ -527,44 +527,11 @@ def main(p_dict):
         f = gzip.open(local_ld_dict_file, 'r')
         ld_dict = cPickle.load(f)
         f.close()
-    
-##################### using hfile as prior #######################
-    print 'Starting calculation using h2 files as priors'
-    print 'Loading prior information from file: %s'%p_dict['hfile']
-    with open(p_dict['hfile']) as f:
-        data = f.readlines()
-    prf_chr = sp.empty(len(data),dtype='int8')
-    prf_sids = []
-    prf_pi = sp.zeros(len(data))
-    prf_sigi2 = sp.zeros(len(data))
-    for i,line in enumerate(data):
-        li = line.split()
-        prf_chr[i] = int(li[0])
-        prf_sids.append(li[1]) 
-        prf_pi[i] = p_dict['PS'][0]         
-        prf_sigi2[i] = float(li[2]) 
-    print 'The input prior p is: ', p_dict['PS']
-    prf_sids = sp.array(prf_sids,dtype='str')
-    prf = {}
-    prf['chrom'] = prf_chr
-    prf['sids'] = prf_sids
-    prf['pi'] = prf_pi
-    prf['sigi2'] = prf_sigi2
-    out_h2_prefix = p_dict['out']+'_h2'
-    H2 = sp.sum(prf_sigi2)
-    if p_dict['user_h2']:
-        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
-    else:
-        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=p_dict['H2'], PRF = prf)
 
-           
-##################### using pfile as prior #######################
-    if p_dict['pfile'] != None:
-        print 'Starting calculation using p_T files as priors' 
-        print 'Loading prior information from file: %s'%p_dict['pfile']
-        with open(p_dict['pfile']) as f:
+    if p_dict['user_h2'] is not None:
+        print 'Starting calculation using user provided h2 files as priors'
+        print 'Loading prior information from file: %s'%p_dict['user_h2']
+        with open(p_dict['user_h2']) as f:
             data = f.readlines()
         prf_chr = sp.empty(len(data),dtype='int8')
         prf_sids = []
@@ -574,8 +541,8 @@ def main(p_dict):
             li = line.split()
             prf_chr[i] = int(li[0])
             prf_sids.append(li[1]) 
-            prf_pi[i] = float(li[2])         
-            prf_sigi2[i] = float(li[3]) 
+            prf_pi[i] = p_dict['PS'][0]         
+            prf_sigi2[i] = float(li[2]) 
         print 'The input prior p is: ', p_dict['PS']
         prf_sids = sp.array(prf_sids,dtype='str')
         prf = {}
@@ -583,9 +550,64 @@ def main(p_dict):
         prf['sids'] = prf_sids
         prf['pi'] = prf_pi
         prf['sigi2'] = prf_sigi2
+        out_user_h2_prefix = p_dict['out']+'_user_h2'
+        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_user_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                          ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=p_dict['H2'], PRF = prf)
+    else:
+        #### no user-provided heritability files provided ####
+        ##################### using hfile as prior #######################
+        print 'Starting calculation using h2 files as priors'
+        print 'Loading prior information from file: %s'%p_dict['hfile']
+        with open(p_dict['hfile']) as f:
+            data = f.readlines()
+        prf_chr = sp.empty(len(data),dtype='int8')
+        prf_sids = []
+        prf_pi = sp.zeros(len(data))
+        prf_sigi2 = sp.zeros(len(data))
+        for i,line in enumerate(data):
+            li = line.split()
+            prf_chr[i] = int(li[0])
+            prf_sids.append(li[1]) 
+            prf_pi[i] = p_dict['PS'][0]         
+            prf_sigi2[i] = float(li[2]) 
+        print 'The input prior p is: ', p_dict['PS']
+        prf_sids = sp.array(prf_sids,dtype='str')
+        prf = {}
+        prf['chrom'] = prf_chr
+        prf['sids'] = prf_sids
+        prf['pi'] = prf_pi
+        prf['sigi2'] = prf_sigi2
+        out_h2_prefix = p_dict['out']+'_h2'
         H2 = sp.sum(prf_sigi2)
-        out_pT_prefix = p_dict['out']+'_pT'
-        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_pT_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                        ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
-
+        annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                              ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)    
+               
+        ##################### using pfile as prior #######################
+        if p_dict['pfile'] is not None:
+            print 'Starting calculation using p_T files as priors' 
+            print 'Loading prior information from file: %s'%p_dict['pfile']
+            with open(p_dict['pfile']) as f:
+                data = f.readlines()
+            prf_chr = sp.empty(len(data),dtype='int8')
+            prf_sids = []
+            prf_pi = sp.zeros(len(data))
+            prf_sigi2 = sp.zeros(len(data))
+            for i,line in enumerate(data):
+                li = line.split()
+                prf_chr[i] = int(li[0])
+                prf_sids.append(li[1]) 
+                prf_pi[i] = float(li[2])         
+                prf_sigi2[i] = float(li[3]) 
+            print 'The input prior p is: ', p_dict['PS']
+            prf_sids = sp.array(prf_sids,dtype='str')
+            prf = {}
+            prf['chrom'] = prf_chr
+            prf['sids'] = prf_sids
+            prf['pi'] = prf_pi
+            prf['sigi2'] = prf_sigi2
+            H2 = sp.sum(prf_sigi2)
+            out_pT_prefix = p_dict['out']+'_pT'
+            annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_pT_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
+                            ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
+    
         
