@@ -193,10 +193,10 @@ def main(pdict):
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
     pdict['user_h2_trimmed'] = tmp(pdict, "user_h2_trimmed.txt")
-    pdict['H2'] = prior_generating.generate_h2_from_user(
+    pdict['H2'], ld_r = prior_generating.generate_h2_from_user(
            pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
     if pdict['need_ld_radius']:
-      pdict['ld_radius'] = "???"
+      pdict['ld_radius'] = ld_r
     pred_main.main(pdict_pred_user(pdict))
 
 
