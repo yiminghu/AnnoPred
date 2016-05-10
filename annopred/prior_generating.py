@@ -9,16 +9,15 @@ from collections import defaultdict
 import datetime
 import math
 
-def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_file, output_h2, PS, output_pT):
-    # generate two sets of prior files: one h2 file corresponding to the first prior in paper
-    # a set of pT prior files corresponding to the input PS values
+def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT):
+    # generate two types of prior files
     ### load the fixed input file ###
-    if len(PS)==1:
-        PS = [PS]
-    h5f1 = h5py.File(annot_file,'r')
+#    if len(PS)==1:
+#        PS = [PS]
+    h5f1 = h5py.File('ref/GC1_GS7_Baseline53.h5','r')
     annot = h5f1['annot'][:]
     h5f1.close()
-    h5f2 = h5py.File(snp_chr_mapping_file,'r')
+    h5f2 = h5py.File('ref/1000G_SNP_info.h5','r')
     snp_chr = h5f2['snp_chr'][:]
     h5f2.close()
     ### get the snp list from h5py ###
@@ -109,20 +108,21 @@ def generate_h2_pT(annot_file, snp_chr_mapping_file, h5py_file, LDSC_results_fil
         M_TV[i] = M_T[tup_i]
         N_TV[i] = N_T[tup_i]
 
-    for ps in PS:
-        pr_p = (ps*N0/H0)*M_TV*sig2V/N_TV
-        sig2 = M_TV*sig2V/N_TV
-        m1 = min(pr_p[pr_p>0])
-        m2 = min(sig2[sig2>0])
-        pr_p[pr_p<0] = np.repeat(m1,np.sum(pr_p<0))
-        sig2[sig2<0] = np.repeat(m2,np.sum(sig2<0))
-        pr_p[pr_p>1] = np.repeat(1,np.sum(pr_p>1))
-        pT_out = []
-        for i in range(len(sig2)):
-            pT_out.append(str(snp_chr1[:,0][i])+' '+str(snp_chr1[:,2][i])+' '+str(pr_p[i])+' '+str(sig2[i])+'\n')
-        ff = open(output_pT+'_'+str(ps)+'_file.txt',"w")
-        ff.writelines(pT_out)
-        ff.close()
+#    for ps in PS:
+    pr_p = (ps*N0/H0)*M_TV*sig2V/N_TV
+    sig2 = M_TV*sig2V/N_TV
+    m1 = min(pr_p[pr_p>0])
+    m2 = min(sig2[sig2>0])
+    pr_p[pr_p<0] = np.repeat(m1,np.sum(pr_p<0))
+    sig2[sig2<0] = np.repeat(m2,np.sum(sig2<0))
+    pr_p[pr_p>1] = np.repeat(1,np.sum(pr_p>1))
+    pT_out = []
+    for i in range(len(sig2)):
+        pT_out.append(str(snp_chr1[:,0][i])+' '+str(snp_chr1[:,2][i])+' '+str(pr_p[i])+' '+str(sig2[i])+'\n')
+#    ff = open(output_pT+'_'+str(ps)+'_file.txt',"w")
+    ff = open(output_pT,"w")
+    ff.writelines(pT_out)
+    ff.close()
 
     return math.ceil(num_snps/3000.0)
 
@@ -176,21 +176,6 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
     ff.writelines(h2_out)
     ff.close()
     return [np.sum(user_h2[:,2]), math.ceil(num_snps/3000.0)]
-
- 
- 
-#annot_file = '/net/zhao/yh367/Data_updated/GC1_GS7_Baseline53.h5'
-#snp_chr_mapping_file = '/net/zhao/yh367/Data_updated/1000G_SNP_info.h5'
-#h5py_file = '/net/zhao/yh367/GenoPred_test/coord_output'
-#LDSC_results_file = '/net/zhao/ql68/Software/ldsc/Results/PD/PD_SimonSanchez_Curated_GC1_GS7_withBaseline.results'
-#output_h2 = '/net/zhao/yh367/GenoPred_test/h2_file.txt'
-#PS = [1,0.3,0.1,0.03,0.01,0.003,0.001,3e-4,1e-4,3e-5,1e-5]
-#output_pT = '/net/zhao/yh367/GenoPred_test/pT' # the path and prefix of the  
-#user_provided_h2 = '/net/zhao/yh367/GenoPred_test/user_h2.txt'
-#output = '/net/zhao/yh367/GenoPred_test/user_h2_processed.txt'
-#generate_h2_pT(annot_file=annot_file, snp_chr_mapping_file=snp_chr_mapping_file, h5py_file=h5py_file, LDSC_results_file=LDSC_results_file, output_h2=output_h2, PS=PS, output_pT=output_pT)
-
-#generate_h2_from_user(user_provided_h2=user_provided_h2, h5py_file=h5py_file, output='user_h2.txt')
 
 
 

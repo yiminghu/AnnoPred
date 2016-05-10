@@ -1,9 +1,9 @@
 import numpy as np
 import h5py
 
-def get_1000G_snps(sumstats, ref, out_file):
+def get_1000G_snps(sumstats, out_file):
     sf = np.loadtxt(sumstats,dtype=str,skiprows=1)
-    h5f = h5py.File(ref,'r')
+    h5f = h5py.File('ref/1000G_SNP_info.h5','r')
     rf = h5f['snp_chr'][:]
     h5f.close()
     ind1 = np.in1d(sf[:,1],rf[:,2])
@@ -26,11 +26,4 @@ def get_1000G_snps(sumstats, ref, out_file):
     ff.writelines(out)
     ff.close()
 
-
-
-#sumstats = '/gpfs/scratch/fas/zhao/yh367/RiskPrediction/Inputs/CAD/CAD_LDpred_input.txt'
-#sumstats = '/gpfs/scratch/fas/zhao/yh367/RiskPrediction/Inputs/CAD/test.txt'
-#ref = '/net/zhao/yh367/Data_updated/1000G_SNP.info.h5'
-#out_file = '/net/zhao/yh367/GenoPred_test/sumstats.txt'               
-#get_1000G_snps(sumstats, ref, out_file)
 

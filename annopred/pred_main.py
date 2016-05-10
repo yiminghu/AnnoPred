@@ -218,7 +218,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
     
     
     for p in ps:
-        print 'Starting LDpred with '+p
+        print 'Starting AnnoPred with '+p
         p_str = p
         results_dict[p_str]={}
         
@@ -282,7 +282,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                 else:
                     h2_chrom = gw_h2_ld_score_est * (n_snps / float(num_snps))
                 #print 'Prior parameters: p=%0.3f, n=%d, m=%d, h2_chrom=%0.4f' % (p, n, n_snps, h2_chrom)
-                res_dict = infinitesimal_mcmc(pval_derived_betas, Pi = prf_pi_chri_sorted, Sigi2=prf_sigi2_chri_sorted, sig_12=sig_12, h2=h2_chrom, n=n, ld_radius=ld_radius,
+                res_dict = non_infinitesimal_mcmc(pval_derived_betas, Pi = prf_pi_chri_sorted, Sigi2=prf_sigi2_chri_sorted, sig_12=sig_12, h2=h2_chrom, n=n, ld_radius=ld_radius,
                                         num_iter=num_iter, burn_in=burn_in, ld_dict=chrom_ld_dict[chrom_str],
                                         start_betas=annopred_inf_chrom_dict[chrom_str], zero_jump_prob=zero_jump_prob)            
                 updated_betas = res_dict['betas']
@@ -306,42 +306,42 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                     r2 = corr ** 2
                     corr_inf = sp.corrcoef(y, prs_inf)[0, 1]
                     r2_inf = corr_inf ** 2
-                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2)
-                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2_inf)
+#                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2)
+#                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2_inf)
                     out.append('The R2 prediction accuracy of PRS using '+chrom_str+' was '+str(r2)+'\n')
                     out_inf.append('The R2 prediction accuracy of PRS using '+chrom_str+' was '+str(r2_inf)+'\n')
         
                     
-        print 'There were %d (SNP) effects' % num_snps
+#        print 'There were %d (SNP) effects' % num_snps
         if has_phenotypes:
             num_indivs = len(y)
             results_dict[p_str]['y']=y
             results_dict[p_str]['risk_scores_pd']=risk_scores_pval_derived
-            print 'Prediction accuracy was assessed using %d individuals.'%(num_indivs)
+#            print 'Prediction accuracy was assessed using %d individuals.'%(num_indivs)
             out.append('Prediction accuracy was assessed using '+str(num_indivs)+' individuals\n')
             
             corr = sp.corrcoef(y, risk_scores_pval_derived)[0, 1]
             r2 = corr ** 2
             results_dict[p_str]['r2_pd']=r2
-            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2, ((1-r2)**2)/num_indivs)
+#            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2, ((1-r2)**2)/num_indivs)
             out.append('The  R2 prediction accuracy (observed scale) for the whole genome was: '+str(r2)+' ('+str(((1-r2)**2)/num_indivs)+')\n')
             
             corr_inf = sp.corrcoef(y, risk_scores_pval_derived_inf)[0, 1]
             r2_inf = corr_inf ** 2
             results_dict[p_str]['r2_pd']=r2_inf
-            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2_inf, ((1-r2_inf)**2)/num_indivs)
+#            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2_inf, ((1-r2_inf)**2)/num_indivs)
             out_inf.append('The  R2 prediction accuracy (observed scale) for the whole genome was: '+str(r2_inf)+' ('+str(((1-r2_inf)**2)/num_indivs)+')\n')
             
             if corr<0:
                 risk_scores_pval_derived = -1* risk_scores_pval_derived
             auc = pred_accuracy(y,risk_scores_pval_derived)
-            print 'AUC for the whole genome was: %0.4f'%auc
+            print 'AnnoPred AUC for the whole genome was: %0.4f'%auc
             out.append('AUC for the whole genome was: '+str(auc)+'\n')
     
             if corr_inf<0:
                 risk_scores_pval_derived_inf = -1* risk_scores_pval_derived_inf
             auc_inf = pred_accuracy(y,risk_scores_pval_derived_inf)
-            print 'AnnodPred-inf AUC for the whole genome was: %0.4f'%auc_inf
+            print 'AnnoPred-inf AUC for the whole genome was: %0.4f'%auc_inf
             out_inf.append('AUC for the whole genome was: '+str(auc_inf)+'\n')
     
             sp.savetxt('%s_y_'%(out_file_prefix)+str(p)+'.txt',y)
@@ -353,7 +353,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
             y_norm = (y-sp.mean(y))/sp.std(y)
             numerator = sp.dot(risk_scores_pval_derived.T, y_norm)
             regression_slope = (numerator / denominator)#[0][0]
-            print 'The slope for predictions with P-value derived  effects is:',regression_slope
+#            print 'The slope for predictions with P-value derived  effects is:',regression_slope
             out.append('The slope for predictions with P-value derived  effects is: '+str(regression_slope)+'\n')
             results_dict[p_str]['slope_pd']=regression_slope
     
@@ -381,7 +381,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
 
 
         
-def infinitesimal_mcmc(beta_hats, Pi, Sigi2, sig_12, start_betas=None, h2=None, n=1000, ld_radius=100, num_iter=60, burn_in=10, zero_jump_prob=0.05, ld_dict=None):
+def non_infinitesimal_mcmc(beta_hats, Pi, Sigi2, sig_12, start_betas=None, h2=None, n=1000, ld_radius=100, num_iter=60, burn_in=10, zero_jump_prob=0.05, ld_dict=None):
     """
     MCMC of non-infinitesimal model
     """
