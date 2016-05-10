@@ -182,7 +182,7 @@ def main(pdict):
 
   if pdict['need_LDSC']:
     ldsc_result = LD_PyWrapper.callLDSC(
-        pdict['sumstats'], pdict['N_case'], pdict[N_ctrl])
+        pdict['sumstats'], pdict['N_case'], pdict['N_ctrl'])
     pdict['h2file'] = tmp(pdict, "ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, "ldsc_pT.txt")
     ld_r = prior_generating.generate_h2_pT(
