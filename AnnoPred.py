@@ -34,14 +34,14 @@ def get_argparser():
                       help="Tuning parameter in (0,1)"
                            ", the proportion of causal snps")
   # Local LD file
-  parser.add_argument('--local_ld_prefix', default="test_ld",
+  parser.add_argument('--local_ld_prefix', required=True,
                       help="A local LD file name prefix"
                            ", will be created if not present")
   # Optional
   parser.add_argument('--ld_radius', type=int,
                       help="If not provided, will use the number of SNPs in" 
                            " common divided by 3000")
-  parser.add_argument('--per_SNP_h2', 
+  parser.add_argument('--user_h2', 
                       help="Path to per-SNP heritability."
                            " If not provided, will use LDSC with 53 baseline"
                            " annotations, GenoCanyon and GenoSkyline.")
@@ -49,6 +49,8 @@ def get_argparser():
   parser.add_argument('--temp_dir', default=".",
                       help="Directory to output all temporary files."
                            " If not specified, will use the current directory.")
+  parser.add_argument('--num_iter', type=int, default=60, 
+                      help="Number of iterations for MCMC, default to 60.")
   ## Output Files
   #####################
   # Coord output H5 file 
@@ -91,11 +93,14 @@ def process_args(args):
   pdict['coord_out'] = args.coord_out
   pdict['N_case'] = args.N_case
   pdict['N_ctrl'] = args.N_ctrl
+  pdict['N'] = args.N_ctrl + args.N_case
 
   if (args.P>0 and args.P<1):
     pdict['P'] = args.P
   else:
     exit("Tuning parameter needs to be in (0,1)!")
+
+  pdict['num_iter'] = args.num_iter
 
   if (isdir(args.temp_dir)):
     pdict['temp_dir'] = args.temp_dir
@@ -107,9 +112,9 @@ def process_args(args):
 
   pdict['local_ld_prefix'] = args.local_ld_prefix
 
-  pdict['need_LDSC'] = args.per_SNP_h2 is None
-  pdict['per_SNP_h2'] = args.per_SNP_h2
-  if not pdict['need_LDSC'] and not isfile(args.per_SNP_h2):
+  pdict['need_LDSC'] = args.user_h2 is None
+  pdict['user_h2'] = args.user_h2
+  if not pdict['need_LDSC'] and not isfile(args.user_h2):
     exit("Per-SNP H2 file does not exist!")
 
   pdict['out'] = args.out
@@ -122,7 +127,7 @@ def tmp(pdict, name):
 # Returns pdict used by coord_trimmed
 def pdict_coord_trimmed(pdict):
   d = {}
-  d['N'] = ???
+  d['N'] = pdict['N']
   d['gf'] = pdict['ref_gt']
   d['vgf'] = pdict['val_gt']
   d['ssf'] = pdict['sumstats']
@@ -141,9 +146,9 @@ def pdict_pred_partial(pdict):
   d['coord'] = pdict['coord_out']
   d['ld_radius'] = pdict['ld_radius']
   d['local_ld_file_prefix'] = pdict['local_ld_prefix']
-  d['PS'] = ???
-  d['num_iter'] = ???
-  d['N'] = ???
+  d['PS'] = pdict['P']
+  d['num_iter'] = pdict['num_iter']
+  d['N'] = pdict['N']
   d['out'] = pdict['out']
   return d
 
@@ -153,21 +158,17 @@ def pdict_pred_ldsc(pdict):
   d['hfile'] = pdict['h2file']
   d['pfile'] = pdict['pTfile']
   d['H2'] = None
-  d['user_h2'] = False
+  d['user_h2'] = None
   return d
 
 # Returns pdict used by Pred when using user h2
 def pdict_pred_user(pdict):
   d = pdict_pred_partial(pdict)
-  d['hfile'] = pdict['user_hfile']
+  d['hfile'] = None
   d['pfile'] = None
-  d['H2'] = ???
-  d['user_h2'] = True
+  d['H2'] = pdict['H2']
+  d['user_h2'] = pdict['user_h2_trimmed']
   return d
-
-# Compute default LD radius
-def compute_default_ld_radius():
-  pass
 
 def main(pdict):
   print(pdict)
@@ -179,23 +180,23 @@ def main(pdict):
   # Generate coord_genotypes H5 file
   coord_trimmed.main(pdict_coord_trimmed(pdict))
 
-  if pdict['need_ld_radius']:
-    pdict['ld_radius'] = compute_default_ld_radius(???)
-
   if pdict['need_LDSC']:
     ldsc_result = LD_PyWrapper.callLDSC(
         pdict['sumstats'], pdict['N_case'], pdict[N_ctrl])
     pdict['h2file'] = tmp(pdict, "ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, "ldsc_pT.txt")
-    prior_generating.generate_h2_pT(
-        ???, ???, pdict['coord_out'], ldsc_result, 
-        pdict['h2file'], ???, pdict['pTfile'])
-
+    ld_r = prior_generating.generate_h2_pT(
+             ???, ???, pdict['coord_out'], ldsc_result, 
+             pdict['h2file'], pdict['P'], pdict['pTfile'])
+    if pdict['need_ld_radius']: 
+      pdict['ld_radius'] = ld_r
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
-    pdict['user_hfile'] = tmp(pdict, "user_hfile.txt")
-    prior_generating.generate_h2_from_user(
-        pdict['per_SNP_h2'], pdict['coord_out'], pdict['user_hfile'])
+    pdict['user_h2_trimmed'] = tmp(pdict, "user_h2_trimmed.txt")
+    pdict['H2'] = prior_generating.generate_h2_from_user(
+           pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
+    if pdict['need_ld_radius']:
+      pdict['ld_radius'] = ???
     pred_main.main(pdict_pred_user(pdict))
 
 
