@@ -14,10 +14,10 @@ def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT):
     ### load the fixed input file ###
 #    if len(PS)==1:
 #        PS = [PS]
-    h5f1 = h5py.File('ref/GC1_GS7_Baseline53.h5','r')
+    h5f1 = h5py.File('ref/Misc/GC1_GS7_Baseline53.h5','r')
     annot = h5f1['annot'][:]
     h5f1.close()
-    h5f2 = h5py.File('ref/1000G_SNP_info.h5','r')
+    h5f2 = h5py.File('ref/Misc/1000G_SNP_info.h5','r')
     snp_chr = h5f2['snp_chr'][:]
     h5f2.close()
     ### get the snp list from h5py ###
