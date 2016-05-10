@@ -174,7 +174,7 @@ def main(pdict):
   print(pdict)
   # Filter SNPs
   sumstats_filtered = tmp(pdict, "sumstats_filtered.txt")
-  pre_sumstats.get_1000G_snps(pdict['sumstats'], ???, sumstats_filtered)
+  pre_sumstats.get_1000G_snps(pdict['sumstats'], "???", sumstats_filtered)
   pdict['sumstats'] = sumstats_filtered
 
   # Generate coord_genotypes H5 file
@@ -186,7 +186,7 @@ def main(pdict):
     pdict['h2file'] = tmp(pdict, "ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, "ldsc_pT.txt")
     ld_r = prior_generating.generate_h2_pT(
-             ???, ???, pdict['coord_out'], ldsc_result, 
+             "???", "???", pdict['coord_out'], ldsc_result, 
              pdict['h2file'], pdict['P'], pdict['pTfile'])
     if pdict['need_ld_radius']: 
       pdict['ld_radius'] = ld_r
@@ -196,7 +196,7 @@ def main(pdict):
     pdict['H2'] = prior_generating.generate_h2_from_user(
            pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
     if pdict['need_ld_radius']:
-      pdict['ld_radius'] = ???
+      pdict['ld_radius'] = "???"
     pred_main.main(pdict_pred_user(pdict))
 
 
