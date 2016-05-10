@@ -45,7 +45,7 @@ def callLDSC(sumstats, n_case, n_ctrl):
     ldscOptsList = [(f,a) for f,a in zip(ldscFlags, ldscArgs)]
     ldscOpts = formatOptions(ldscOptsList)
     subprocess.call(["python", ldPath + "/ldsc.py"] + ldscOpts)
-    return ldscArgs[6]
+    return ldscArgs[6] + ".results"
 
 if __name__ == "__main__":
     callLDSC(sys.argv[1], sys.argv[2], sys.argv[3])
