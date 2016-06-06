@@ -173,30 +173,48 @@ def pdict_pred_user(pdict):
 def main(pdict):
   print(pdict)
   # Filter SNPs
+  print 'Filtering Summary Stats...'
+  org_sumstats = pdict['sumstats']
   sumstats_filtered = tmp(pdict, "sumstats_filtered.txt")
-  pre_sumstats.get_1000G_snps(pdict['sumstats'], sumstats_filtered)
-  pdict['sumstats'] = sumstats_filtered
+  if not isfile(sumstats_filtered):
+    pre_sumstats.get_1000G_snps(pdict['sumstats'], sumstats_filtered)
+    pdict['sumstats'] = sumstats_filtered
+  else:
+    print 'Filtered sumstats found, start coordinating genotypes...'
 
   # Generate coord_genotypes H5 file
-  coord_trimmed.main(pdict_coord_trimmed(pdict))
+  print 'Coordinate summary stats and validation/reference genotype data...'
+  if not isfile(pdict_coord_trimmed(pdict)['out']):
+    coord_trimmed.main(pdict_coord_trimmed(pdict))
+  else:
+    print 'Coord file already exists! Continue calculating priors...'
 
   if pdict['need_LDSC']:
-    ldsc_result = LD_PyWrapper.callLDSC(
-        pdict['sumstats'], pdict['N_case'], pdict['N_ctrl'])
+    print 'User-provided heritability file not found. Generating priors...'
+#    if isfile()
+    ldsc_result = tmp(pdict,'ldsc.results')
+    if not isfile(ldsc_result):
+      LD_PyWrapper.callLDSC(
+          org_sumstats, pdict['N_case'], pdict['N_ctrl'], tmp(pdict,'ldsc'))
+    else:
+      print 'LDSC results found! Continue calculating priors ...'
     pdict['h2file'] = tmp(pdict, "ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, "ldsc_pT.txt")
     ld_r = prior_generating.generate_h2_pT(
              pdict['coord_out'], ldsc_result, 
              pdict['h2file'], pdict['P'], pdict['pTfile'])
     if pdict['need_ld_radius']: 
-      pdict['ld_radius'] = ld_r
+      pdict['ld_radius'] = int(ld_r)
+    print 'Starting AnnoPred...'
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
+    print 'User-provided heritability file found. Extracting SNPs in common...'
     pdict['user_h2_trimmed'] = tmp(pdict, "user_h2_trimmed.txt")
     pdict['H2'], ld_r = prior_generating.generate_h2_from_user(
            pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
     if pdict['need_ld_radius']:
-      pdict['ld_radius'] = ld_r
+      pdict['ld_radius'] = int(ld_r)
+    print 'Starting AnnoPred...'
     pred_main.main(pdict_pred_user(pdict))
 
 
