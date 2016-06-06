@@ -14,7 +14,7 @@ ambig_nts = set([('A', 'T'), ('T', 'A'), ('G', 'C'), ('C', 'G')])
 # recode_dict = {'1':'A', '2':'C', '3':'G', '4':'T'}
 opp_strand_dict = {'A':'T', 'G':'C', 'T':'A', 'C':'G'}
 
-valid_nts = set(['A','T','C','G'])    
+valid_nts = set(['A','T','C','G'])
 
 def _get_chrom_dict_(loci, chromosomes):
     chr_dict = {}
@@ -34,7 +34,6 @@ def _get_chrom_dict_(loci, chromosomes):
      
     print 'Genotype dictionary filled'
     return chr_dict
-
 
 
 def _parse_plink_snps_(genotype_file, snp_indices):
@@ -71,7 +70,7 @@ def _parse_plink_snps_(genotype_file, snp_indices):
     plinkf.close()
     assert snp_i==len(raw_snps), 'Failed to parse SNPs?'
     num_indivs = len(raw_snps[0])
-    freqs = sp.sum(raw_snps,1, dtype='float64')/(2*float(num_indivs))
+    freqs = sp.sum(raw_snps,1, dtype='float32')/(2*float(num_indivs))
     return raw_snps, freqs
 
 
@@ -134,8 +133,8 @@ def _parse_decode_genotypes_(decode_file, sids, pns, ocg):
         if i%1000==0:
             print "Reached %d'th SNP"%i
         probs = ih5f["Probabilities2"][m_i,pn_sort_indices]
-        pat_snp = sp.array(map(lambda x: x[0], probs),'float64')
-        mat_snp = sp.array(map(lambda x: x[1], probs),'float64')
+        pat_snp = sp.array(map(lambda x: x[0], probs),'float32')
+        mat_snp = sp.array(map(lambda x: x[1], probs),'float32')
         snp = pat_snp+mat_snp
         ok_filter = (pat_snp>=0)*(mat_snp>=0)
         if not sp.all(ok_filter):
@@ -161,8 +160,14 @@ def _parse_decode_genotypes_(decode_file, sids, pns, ocg):
 
     return {'ss_filter':mn_filter, 'ss_order':order}
 
+
+
+
+
 lc_2_cap_map = {'a':'A', 'c':'C', 'g':'G', 't':'T'}
-        
+
+
+
 def parse_sum_stats_basic(filename=None,
                               bimfile =None,
                               hdf5_file=None, 
@@ -259,9 +264,81 @@ def parse_sum_stats_basic(filename=None,
             
 
 
+def coordinate_decode_genot_ss(genotype_file=None,
+                                hdf5_file=None,
+                                genetic_map_dir=None, indiv_file=None):
+    """
+    Assumes deCODE genotype files.  Imputes missing genotypes.
+    """
+    pns = []
+    with open(indiv_file) as f:
+        for line in f:
+            pns.append(line.strip())
+    print 'Parsed IDs for %d individuals.'%len(pns)
+    pns = sp.array(pns)
+    
+    #Figure out overlap in individuals, and order them
+#     for chrom in range(1,23):
+#         fn = "%s/chr%d.hdf5"%(genotype_file,chrom)
+#         ih5f = h5py.File(fn,"r")
+#         pns1 = ih5f['PNs'][...]
+#         pns = sp.intersect1d(pns, pns1)
+#         ih5f.close()
+#     print 'Found %d overlapping pns'%len(pns)
+#     pns = sp.sort(pns)
+
+    hdf5_file.create_dataset('fids', data=pns)
+    hdf5_file.create_dataset('iids', data=pns)
+    ssf = hdf5_file['sum_stats']
+    cord_data_g = hdf5_file.create_group('cord_data')
+
+    #Figure out chromosomes and positions by looking at SNPs.  
+    chromosomes = ssf.keys()
+    num_common_snps = 0
+    for chr_str in chromosomes:
+        chrom = int(chr_str.split('_')[1])
+        print 'Working on chromsome: %s'%chr_str
+        try:
+            ssg = ssf['chrom_%d' % chrom]
+        except Exception, err_str:
+            print err_str
+            print 'Did not find chromsome in SS dataset.'
+            print 'Continuing.'
+            continue
+        ss_sids = ssg['sids'][...]
+        ss_sid_set = set(ss_sids)
+        assert len(ss_sid_set) == len(ss_sids), 'The summary statistics contain some duplicates?'
+        
+        ofg = cord_data_g.create_group('chrom_%d' % chrom)
+        decode_file='%s/chr%d.hdf5'%(genotype_file,chrom)
+        ret_d = _parse_decode_genotypes_(decode_file, ss_sids, pns, ofg)        
+        
+        ss_filter = ret_d['ss_filter']
+        ss_order = ret_d['ss_order']
+        betas = ssg['betas'][...]
+        betas = (betas[ss_filter])[ss_order]
+        log_odds = ssg['log_odds'][...]
+        log_odds = (log_odds[ss_filter])[ss_order]
+        ps = ssg['ps'][...]
+        ps = (ps[ss_filter])[ss_order]
+        
+        assert not sp.any(sp.isnan(betas)), 'Some of the effect estimates are missing (parsed as NaN).'
+        assert not sp.any(sp.isinf(betas)), 'Some of the effect estimates are missing (parsed as Inf).'
+#        ofg.create_dataset('genetic_map', data=genetic_map)
+        ofg.create_dataset('ps', data=ps)
+        ofg.create_dataset('betas', data=betas)
+        ofg.create_dataset('log_odds', data=log_odds)
+        
+        num_common_snps += len(betas)
+    print 'There were %d SNPs in common' % num_common_snps
+    print 'Done coordinating genotypes and summary statistics datasets.'
+
+
 def coordinate_genot_ss(genotype_file=None,
                         hdf5_file=None,
-                        genetic_map_dir=None):
+                        genetic_map_dir=None,
+                        check_mafs=False,
+                        min_maf =0.01):
     """
     Assumes plink BED files.  Imputes missing genotypes.
     """
@@ -432,7 +509,7 @@ def coordinate_genot_ss(genotype_file=None,
         sids = ssg['sids'][...][ok_indices['ss']]
 
         #Check SNP frequencies..
-        if 'freqs' in ssg.keys():
+        if check_mafs and 'freqs' in ssg.keys():
             ss_freqs = ss_freqs[ok_indices['ss']]
             freq_discrepancy_snp = sp.absolute(ss_freqs-(1-freqs))>0.15
             if sp.any(freq_discrepancy_snp):
@@ -455,7 +532,7 @@ def coordinate_genot_ss(genotype_file=None,
                  
         
         #Filter minor allele frequency SNPs.
-        maf_filter = (freqs>0.01)*(freqs<0.99)
+        maf_filter = (freqs>min_maf)*(freqs<(1-min_maf))
         maf_filter_sum = sp.sum(maf_filter)
         n_snps = len(maf_filter)
         assert maf_filter_sum<=n_snps, "WTF?"
@@ -472,7 +549,7 @@ def coordinate_genot_ss(genotype_file=None,
             log_odds = log_odds[maf_filter]
             
             
-            print '%d SNPs with MAF < 0.01 were filtered'%(n_snps-maf_filter_sum)
+            print '%d SNPs with MAF < %0.3f were filtered'%(n_snps-maf_filter_sum,min_maf)
 
         print '%d SNPs were retained on chromosome %d.' % (maf_filter_sum, chrom)
         
@@ -494,8 +571,8 @@ def coordinate_genot_ss(genotype_file=None,
             print 'Raw effect sizes PRS correlation for chromosome %d was %0.4f' % (chrom, rb_corr)
         
         sid_set = set(sids)
-        genetic_map = [] 
         if genetic_map_dir is not None:
+            genetic_map = [] 
             with gzip.open(genetic_map_dir+'chr%d.interpolated_genetic_map.gz'%chrom) as f:
                 for line in f:
                     l = line.split()
@@ -512,7 +589,8 @@ def coordinate_genot_ss(genotype_file=None,
         ofg.create_dataset('positions', data=positions)
         ofg.create_dataset('nts', data=nts)
         ofg.create_dataset('sids', data=sids)
-        ofg.create_dataset('genetic_map', data=genetic_map)
+        if genetic_map_dir is not None:
+            ofg.create_dataset('genetic_map', data=genetic_map)
 #         print 'Sum of squared effect sizes:', sp.sum(betas ** 2)
 #         print 'Sum of squared log odds:', sp.sum(log_odds ** 2)
         ofg.create_dataset('betas', data=betas)
@@ -540,7 +618,9 @@ def coordinate_genot_ss(genotype_file=None,
 def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
                                     reference_genotype_file = None,
                                     hdf5_file = None,
-                                    genetic_map_dir=None):
+                                    genetic_map_dir=None,
+                                    check_mafs=False,
+                                    min_maf=0.01):
 #   recode_dict = {1:'A', 2:'T', 3:'C', 4:'G'} #1K genomes recoding..
     print 'Coordinating things w genotype file: %s \nref. genot. file: %s'%(genotype_file, reference_genotype_file) 
     plinkf = plinkfile.PlinkFile(genotype_file)
@@ -681,11 +761,10 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
         g_ss_nt_concord_count = sp.sum(g_nts[g_snp_map] == ss_nts[ss_snp_map])/2.0
         rg_ss_nt_concord_count = sp.sum(rg_nts_ok == ss_nts[ss_snp_map])/2.0
         g_rg_nt_concord_count = sp.sum(g_nts[g_snp_map] == rg_nts_ok)/2.0
-        print 'Nucleotide concordance counts out of % genotypes: vg-g: %d, vg-ss: %d, g-ss: %d'%(len(g_snp_map),g_rg_nt_concord_count, g_ss_nt_concord_count, rg_ss_nt_concord_count)
+        print 'Nucleotide concordance counts out of %d genotypes: vg-g: %d, vg-ss: %d, g-ss: %d'%(len(g_snp_map),g_rg_nt_concord_count, g_ss_nt_concord_count, rg_ss_nt_concord_count)
         tot_g_ss_nt_concord_count += g_ss_nt_concord_count
         tot_rg_ss_nt_concord_count += rg_ss_nt_concord_count
         tot_g_rg_nt_concord_count += g_rg_nt_concord_count
-        assert sp.all(rg_nts_ok==g_nts[g_snp_map]), 'WTF?'
 
 
         num_non_matching_nts = 0
@@ -763,9 +842,9 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
 
         #Resorting by position
         positions = sp.array(chrom_d['positions'])[ok_indices['g']]
-        order = sp.argsort(positions)
-        sorted_positions = positions[order]
-        assert sp.all(sorted_positions==positions), 'Perhaps something is wrong here?'
+#         order = sp.argsort(positions)
+#         sorted_positions = positions[order]
+#         assert sp.all(sorted_positions==positions), 'Perhaps something is wrong here?'
 #         ok_indices['g'] = list(sp.array(ok_indices['g'])[order])
 #         ok_indices['ss'] = list(sp.array(ok_indices['ss'])[order])
 
@@ -793,15 +872,21 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
         nts = sp.array(ok_nts)#[order]
         sids = ssg['sids'][...][ok_indices['ss']]
 
+        #For debugging...
+#         g_sids = sp.array(chrom_d['sids'])[ok_indices['g']]
+#         rg_sids = sp.array(chrom_d_ref['sids'])[ok_indices['rg']]
+#         ss_sids = ssg['sids'][...][ok_indices['ss']]
+#         assert sp.all(g_sids==rg_sids) and sp.all(rg_sids==ss_sids), 'WTF?'
+        
         #Check SNP frequencies..
-        if 'freqs' in ssg.keys():
+        if check_mafs and 'freqs' in ssg.keys():
             ss_freqs = ss_freqs[ok_indices['ss']]
             freq_discrepancy_snp = sp.absolute(ss_freqs-(1-freqs))>0.15
             if sp.any(freq_discrepancy_snp):
-                print 'Warning: %d SNPs appear to have high frequency discrepancy between summary statistics and validation sample'%sp.sum(freq_discrepancy_snp)
-                print freqs[freq_discrepancy_snp]
-                print ss_freqs[freq_discrepancy_snp]
-                
+                print 'Warning: %d SNPs were filtered due to high allele frequency discrepancy between summary statistics and validation sample'%sp.sum(freq_discrepancy_snp)
+#                 print freqs[freq_discrepancy_snp]
+#                 print ss_freqs[freq_discrepancy_snp]
+                 
                 #Filter freq_discrepancy_snps
                 ok_freq_snps = sp.negative(freq_discrepancy_snp)
                 raw_snps = raw_snps[ok_freq_snps]
@@ -811,16 +896,24 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
                 snp_stds_ref = snp_stds_ref[ok_freq_snps]
                 snp_means_ref = snp_means_ref[ok_freq_snps]
                 freqs = freqs[ok_freq_snps]
+                freqs_ref = freqs_ref[ok_freq_snps]
                 ps = ps[ok_freq_snps]
                 positions = positions[ok_freq_snps]
                 nts = nts[ok_freq_snps]
                 sids = sids[ok_freq_snps]
                 betas = betas[ok_freq_snps]
                 log_odds = log_odds[ok_freq_snps]
+                #For debugging...
+#         if sp.any(freq_discrepancy_snp):
+#             g_sids = g_sids[ok_freq_snps]
+#             rg_sids = rg_sids[ok_freq_snps]
+#             ss_sids = ss_sids[ok_freq_snps]
+#         assert sp.all(g_sids==rg_sids) and sp.all(rg_sids==ss_sids), 'WTF?'
+
         
         
         #Filter minor allele frequency SNPs.
-        maf_filter = (freqs>0.01)*(freqs<0.99)
+        maf_filter = (freqs>min_maf)*(freqs<(1-min_maf))
         maf_filter_sum = sp.sum(maf_filter)
         n_snps = len(maf_filter)
         assert maf_filter_sum<=n_snps, "WTF?"
@@ -832,12 +925,18 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
             snp_stds_ref = snp_stds_ref[maf_filter]
             snp_means_ref = snp_means_ref[maf_filter]
             freqs = freqs[maf_filter]
+            freqs_ref = freqs_ref[maf_filter]
             ps = ps[maf_filter]
             positions = positions[maf_filter]
             nts = nts[maf_filter]
             sids = sids[maf_filter]
             betas = betas[maf_filter]
             log_odds = log_odds[maf_filter]
+#         if sp.sum(maf_filter)<n_snps:
+#             g_sids = g_sids[maf_filter]
+#             rg_sids = rg_sids[maf_filter]
+#             ss_sids = ss_sids[maf_filter]
+#         assert sp.all(g_sids==rg_sids) and sp.all(rg_sids==ss_sids), 'WTF?'
         
         
         
@@ -865,7 +964,7 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
         ofg.create_dataset('snp_stds_ref', data=snp_stds_ref)
         ofg.create_dataset('snp_means_ref', data=snp_means_ref)
         ofg.create_dataset('freqs_ref', data=freqs_ref)
-        ofg.create_dataset('nts', data=ok_nts)
+        ofg.create_dataset('nts', data=nts)
         ofg.create_dataset('ps', data=ps)
         ofg.create_dataset('positions', data=positions)
         ofg.create_dataset('sids', data=sids)
@@ -893,11 +992,6 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
     print 'Done!'
 
 
-"""
-p_dict is a dictionary contains all the input options
-p_dict = {'gf':None, 'vgf':None, 'ssf':None, 'out':None, 'vbim':None, 'N':None, 'ssf_format':'STANDARD', 'gmdir':None, 
-              'indiv_list':None, 'gf_format':'PLINK', 'skip_coordination':False}
-"""
 
 def main(p_dict):
     if p_dict['N'] is None:
@@ -916,14 +1010,27 @@ def main(p_dict):
         raise Exception('Output file already exists!')
         
     h5f = h5py.File(p_dict['out'],'w')
-    parse_sum_stats_basic(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, n=p_dict['N'])
+    if p_dict['ssf_format']=='STANDARD':
+        parse_sum_stats_standard(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, n=p_dict['N'])
+    elif p_dict['ssf_format']=='PGC':
+        parse_sum_stats_pgc_small(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, n=p_dict['N'])
+    elif p_dict['ssf_format']=='PGC_large':
+        parse_sum_stats_pgc(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, n=p_dict['N'])
+    elif p_dict['ssf_format']=='BASIC':
+        parse_sum_stats_basic(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, n=p_dict['N'])
+    elif p_dict['ssf_format']=='GIANT':
+        parse_sum_stats_giant(filename=p_dict['ssf'], bimfile = bimfile, hdf5_file=h5f, debug=p_dict['debug'])
+    elif p_dict['ssf_format']=='DECODE':
+        parse_sum_stats_decode(filename=p_dict['ssf'], hdf5_file=h5f)
     if not p_dict['vgf'] == None:
         assert p_dict['gf_format']=='PLINK', 'The validation genotype option currently only works with the PLINK format'
         coordinate_genotypes_ss_w_ld_ref(genotype_file=p_dict['vgf'], reference_genotype_file=p_dict['gf'], 
-                                         genetic_map_dir=p_dict['gmdir'], hdf5_file=h5f)
+                                         genetic_map_dir=p_dict['gmdir'], check_mafs = p_dict['check_mafs'], 
+                                         hdf5_file=h5f, min_maf=p_dict['maf'], skip_coordination=p_dict['skip_coordination'])
     else:
         if p_dict['gf_format']=='PLINK':
-            coordinate_genot_ss(genotype_file=p_dict['gf'],  genetic_map_dir=p_dict['gmdir'], hdf5_file=h5f)
+            coordinate_genot_ss(genotype_file=p_dict['gf'],  genetic_map_dir=p_dict['gmdir'], check_mafs = p_dict['check_mafs'], 
+                                hdf5_file=h5f, min_maf=p_dict['maf'], skip_coordination=p_dict['skip_coordination'])
         elif p_dict['gf_format']=='DECODE':
             if not p_dict['skip_coordination']:
                 raise Exception('This option requires you to skip coordination of nucleotides and some QC.  Please confirm with --skip_coordination flag.')
