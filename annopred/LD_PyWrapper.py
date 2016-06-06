@@ -32,7 +32,7 @@ def callMunge(sumstats, n_case, n_ctrl, ldPath, refPath):
     return mungeArgs[4]
 
 #Assembles call to LDSC software. Returns path to SNP heritablility file in ref/Misc
-def callLDSC(sumstats, n_case, n_ctrl):
+def callLDSC(sumstats, n_case, n_ctrl, results_path):
     ldPath = loadLDPath()
     refPath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + "/ref/"
     SkylineAnnotations = ["Brain", "GI", "Lung", "Heart", "Blood", "Muscle", "Epithelial"]
@@ -41,7 +41,7 @@ def callLDSC(sumstats, n_case, n_ctrl):
     refFiles = [refPath + a for a in AnnotationPaths]
     print("Running LD Score calculation...")
     ldscFlags = ["--" + flag for flag in ["h2", "ref-ld-chr", "w-ld-chr", "frqfile-chr", "overlap-annot", "print-coefficients", "out"]]
-    ldscArgs = [mungeFile + '.sumstats.gz', ','.join(refFiles), refPath+'/Misc/weights.', refPath+'/Misc/1000G.mac5eur.', '', '', refPath+'/Misc/SNP_Heritability']
+    ldscArgs = [mungeFile + '.sumstats.gz', ','.join(refFiles), refPath+'/Misc/weights.', refPath+'/Misc/1000G.mac5eur.', '', '', results_path]
     ldscOptsList = [(f,a) for f,a in zip(ldscFlags, ldscArgs)]
     ldscOpts = formatOptions(ldscOptsList)
     subprocess.call(["python", ldPath + "/ldsc.py"] + ldscOpts)
