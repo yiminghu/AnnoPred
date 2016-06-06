@@ -30,4 +30,20 @@ wget http://genocanyon.med.yale.edu/AnnoPredFiles/AnnoPred_ref.tar.gz
 tar -zxvf AnnoPred_ref.tar.gz
 ```
 This step will generated a folder named ref containing functional annotations for AnnoPred.
-3) Setup LDSC: open LDSC.config and change 
+
+3) Setup LDSC: open LDSC.config and change /absolute/path/to/ldsc to the absolute path to LDSC in your local directory
+
+4) Example:
+```python
+python AnnoPred.py\
+  --sumstats=GWAS_sumstats.txt\
+  --ref_gt=validation\
+  --val_gt=validation\
+  --coord_out=test_output/coord_out\
+  --N_case=12171\
+  --N_ctrl=56862\
+  --P=0.1\
+  --local_ld_prefix=tmp_test/local_ld\
+  --out=test_output/test\
+  --temp_dir=tmp_t2d\
+```
