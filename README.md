@@ -11,6 +11,7 @@ The software is developed and tested in Linux. You will need Python 2.7 and seve
 * plinkio
 * scipy
 * numpy
+
 Besides these, you also need to have [LDSC](https://github.com/bulik/ldsc) installed. 
 
 ## Input Data
@@ -19,6 +20,6 @@ reference/validation genotype files, plink binary format, http://pngu.mgh.harvar
 
 ## Setup and Usage Example
 Clone this repository
-'''
+'''shell
 git clone https://github.com/yiminghu/AnnoPred.git
 '''
