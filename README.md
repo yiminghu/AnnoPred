@@ -21,6 +21,6 @@ reference/validation genotype files, plink binary format, http://pngu.mgh.harvar
 ## Setup and Usage Example
 Clone this repository
 
-'''
+```
 git clone https://github.com/yiminghu/AnnoPred.git
-'''
+```
