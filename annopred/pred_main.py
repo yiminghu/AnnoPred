@@ -4,7 +4,8 @@ except Exception:
     print 'Using Numpy instead of Scipy.'
     import numpy as sp
     
-from numpy import linalg 
+#from numpy import linalg 
+from scipy import linalg 
 import pdb
 import plinkio
 from plinkio import plinkfile
@@ -52,7 +53,7 @@ def pred_accuracy(y_true, y_pred):
         return cor
 
 
-def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_training=None):
+def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0):
     """
     Calculates LD tables, and the LD score in one go...
     """
@@ -62,24 +63,18 @@ def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0, h2=None, n_train
     print m,n
     ld_scores = sp.ones(m)
     ret_dict = {}
-    if gm_ld_radius is None:
-        for snp_i, snp in enumerate(snps):
-            # Calculate D
-            start_i = max(0, snp_i - ld_radius)
-            stop_i = min(m, snp_i + ld_radius + 1)
-            X = snps[start_i: stop_i]
-            D_i = sp.dot(snp, X.T) / n
-            r2s = D_i ** 2
-            ld_dict[snp_i] = D_i
-            lds_i = sp.sum(r2s - (1-r2s) / (n-2),dtype='float32')
-            #lds_i = sp.sum(r2s - (1-r2s)*empirical_null_r2)
-            ld_scores[snp_i] =lds_i
-        
-        avg_window_size=sp.mean(window_sizes)
-        print 'Average # of SNPs in LD window was %0.2f'%avg_window_size
-        if ld_window_size==0:
-            ld_window_size = avg_window_size*2
-        ret_dict['ld_boundaries'] = ld_boundaries
+    for snp_i, snp in enumerate(snps):
+        # Calculate D
+        start_i = max(0, snp_i - ld_radius)
+        stop_i = min(m, snp_i + ld_radius + 1)
+        X = snps[start_i: stop_i]
+        D_i = sp.dot(snp, X.T) / n
+        r2s = D_i ** 2
+        ld_dict[snp_i] = D_i
+        lds_i = sp.sum(r2s - (1-r2s) / (n-2),dtype='float32')
+        #lds_i = sp.sum(r2s - (1-r2s)*empirical_null_r2)
+        ld_scores[snp_i] =lds_i
+    
     ret_dict['ld_dict']=ld_dict
     ret_dict['ld_scores']=ld_scores
     
@@ -218,7 +213,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
     
     
     for p in ps:
-        print 'Starting AnnoPred with '+p
+        print 'Starting AnnoPred with ', p
         p_str = p
         results_dict[p_str]={}
         
@@ -467,8 +462,8 @@ p_dict = {'coord':None, 'ld_radius':None, 'local_ld_file_prefix':None, 'hfile':N
 
 def main(p_dict):
     local_ld_dict_file = '%s_ldradius%d.pickled.gz'%(p_dict['local_ld_file_prefix'], p_dict['ld_radius'])
-    if len(p_dict['PS'])==1:
-        p_dict['PS'] = [p_dict['PS']]
+    
+    p_dict['PS'] = [p_dict['PS']]
     if not os.path.isfile(local_ld_dict_file):
         df = h5py.File(p_dict['coord'])
                  
@@ -578,9 +573,9 @@ def main(p_dict):
         prf['pi'] = prf_pi
         prf['sigi2'] = prf_sigi2
         out_h2_prefix = p_dict['out']+'_h2'
-        H2 = sp.sum(prf_sigi2)
+        #H2 = sp.sum(prf_sigi2)
         annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_h2_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                              ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)    
+                              ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], PRF = prf)    
                
         ##################### using pfile as prior #######################
         if p_dict['pfile'] is not None:
@@ -605,9 +600,9 @@ def main(p_dict):
             prf['sids'] = prf_sids
             prf['pi'] = prf_pi
             prf['sigi2'] = prf_sigi2
-            H2 = sp.sum(prf_sigi2)
+            #H2 = sp.sum(prf_sigi2)
             out_pT_prefix = p_dict['out']+'_pT'
             annopred_genomewide(data_file=p_dict['coord'], out_file_prefix=out_pT_prefix, ps=p_dict['PS'], ld_radius=p_dict['ld_radius'], 
-                            ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], h2=H2, PRF = prf)
+                            ld_dict = ld_dict, n=p_dict['N'], num_iter=p_dict['num_iter'], PRF = prf)
     
-        
+    
