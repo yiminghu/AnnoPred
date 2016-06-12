@@ -1,6 +1,6 @@
 # AnnoPred
 
-Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.
+**Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.**
 
 ## Introduction
 This tool predict disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations.
