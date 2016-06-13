@@ -109,7 +109,7 @@ def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT):
         N_TV[i] = N_T[tup_i]
 
 #    for ps in PS:
-    pr_p = (ps*N0/H0)*M_TV*sig2V/N_TV
+    pr_p = (PS*N0/H0)*M_TV*sig2V/N_TV
     sig2 = M_TV*sig2V/N_TV
     m1 = min(pr_p[pr_p>0])
     m2 = min(sig2[sig2>0])
