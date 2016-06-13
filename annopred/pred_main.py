@@ -1,3 +1,5 @@
+## This script was modified from Dr. Bjarni J. Vilhjalmsson's code (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank him for sharing his code
+
 try: 
     import scipy as sp
 except Exception:
