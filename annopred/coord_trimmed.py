@@ -994,6 +994,7 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
 
 
 def main(p_dict):
+    p_dict['check_mafs'] = False
     if p_dict['N'] is None:
         print 'Please specify an integer value for the sample size used to calculate the GWAS summary statistics.'
     print  'Preparing to parse summary statistics'
