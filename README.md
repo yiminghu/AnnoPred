@@ -50,7 +50,7 @@ python AnnoPred.py\
 Keep in mind that this will generate intermediate data at tmp_test/ and test_output/. Contents in These folders are reused on different runs, not deleted: you might want to delete this folder before running AnnoPred on a new dataset, or specify a different folder on each run.
 
 The example command parameters mean:
-* --sumstats=GWAS_sumstats.txt: GWAS summary statistics, with seven fields: hg19chrc, snpid, a1, a2, bp, or and p
+* --sumstats=GWAS_sumstats.txt: GWAS summary statistics, with seven fields: hg19chrc, snpid, a1, a2, bp, or and p. test_data/GWAS_sumstats.txt is a subset of DIAGRAM summary statistics. We thank DIAGRAM consortium for making the data publicly available. The oringinal download link is http://diagram-consortium.org/downloads.html
 * --ref_gt=validation: path to the reference genotype data. We suggest also using validation data as reference data. Plink binary format (.bed, .bim, .fam), description can be * found in .
 * --val_gt=validation: path to the validation genotype data. Plink binary format, the sixth column in fam file cannot be missing.
 * --coord_out=test_output/coord_out: path for saving a h5py file, which contains validation genotypes, summary statistics and standardized effect sizes of SNPs in common.
@@ -76,4 +76,6 @@ python AnnoPred.py\
   --out=test_output/test\
   --temp_dir=tmp_t2d\
 ```
-* --user_h2=user_h2_est.txt: user-provided heritability estimation for each SNP. A text file with three fields: chr, snpid and per-snp heritability estimation
+* --user_h2=user_h2_est.txt: user-provided heritability estimation for each SNP. A text file with three fields: chr, snpid and per-snp heritability estimation. See test_data/user_h2_est.txt for example.
+
+## Output files
