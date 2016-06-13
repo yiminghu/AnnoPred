@@ -218,7 +218,7 @@ def parse_sum_stats_basic(filename=None,
                     chrom_dict[chrom]['nts'].append(nt)                
                     raw_beta = sp.log(float(l[5]))
                     chrom_dict[chrom]['log_odds'].append(raw_beta)
-                    beta = sp.sign(raw_beta) * stats.norm.ppf(pval/2.0)
+                    beta = sp.sign(raw_beta) * stats.norm.ppf(1 - pval/2.0)
                     chrom_dict[chrom]['betas'].append(beta / sp.sqrt(n))
      
             
