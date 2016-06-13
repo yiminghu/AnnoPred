@@ -995,6 +995,7 @@ def coordinate_genotypes_ss_w_ld_ref(genotype_file = None,
 
 def main(p_dict):
     p_dict['check_mafs'] = False
+    p_dict['maf'] = 0.01
     if p_dict['N'] is None:
         print 'Please specify an integer value for the sample size used to calculate the GWAS summary statistics.'
     print  'Preparing to parse summary statistics'
@@ -1027,11 +1028,11 @@ def main(p_dict):
         assert p_dict['gf_format']=='PLINK', 'The validation genotype option currently only works with the PLINK format'
         coordinate_genotypes_ss_w_ld_ref(genotype_file=p_dict['vgf'], reference_genotype_file=p_dict['gf'], 
                                          genetic_map_dir=p_dict['gmdir'], check_mafs = p_dict['check_mafs'], 
-                                         hdf5_file=h5f, min_maf=p_dict['maf'], skip_coordination=p_dict['skip_coordination'])
+                                         hdf5_file=h5f, min_maf=p_dict['maf'])
     else:
         if p_dict['gf_format']=='PLINK':
             coordinate_genot_ss(genotype_file=p_dict['gf'],  genetic_map_dir=p_dict['gmdir'], check_mafs = p_dict['check_mafs'], 
-                                hdf5_file=h5f, min_maf=p_dict['maf'], skip_coordination=p_dict['skip_coordination'])
+                                hdf5_file=h5f, min_maf=p_dict['maf'])
         elif p_dict['gf_format']=='DECODE':
             if not p_dict['skip_coordination']:
                 raise Exception('This option requires you to skip coordination of nucleotides and some QC.  Please confirm with --skip_coordination flag.')
