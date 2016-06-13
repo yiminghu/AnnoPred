@@ -79,3 +79,12 @@ python AnnoPred.py\
 * --user_h2=user_h2_est.txt: user-provided heritability estimation for each SNP. A text file with three fields: chr, snpid and per-snp heritability estimation. See test_data/user_h2_est.txt for example.
 
 ## Output files
+When --user_h2 is not provided, AnnoPred will output a set of files including two types of AnnoPred polygenic risk scores, phenotypes of testing data, prediction accuracy, posterior expectation estimation of the effect size of each snp. Take the output of code shown in 4) of previous section as an example:
+* test_output/test_h2_non_inf_y_0.1.txt: phenotypes of testing data.
+* test_output/test_h2_non_inf_prs_0.1.txt: AnnoPred PRS using the first type of priors (see manuscript for details).
+* test_output/test_h2_non_inf_auc_0.1.txt: prediction accuracy of AnnoPred PRS using the first prior: AUC for binary traits and correlation between PRS and y for continuous traits.
+* test_output/test_h2_non_inf_betas_0.1.txt: posterior expectation estimation of the effect size of each snps using the second type of prior.
+* test_output/test_pT_non_inf_prs_0.1.txt: AnnoPred PRS using the second type of priors (see manuscript for details).
+* test_output/test_pT_non_inf_auc_0.1.txt: prediction accuracy of AnnoPred PRS using the first prior: AUC for binary traits and correlation between PRS and y for continuous traits.
+* test_output/test_pT_non_inf_betas_0.1.txt: posterior expectation estimation of the effect size of each snps using the second type of prior.
+
