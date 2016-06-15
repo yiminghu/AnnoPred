@@ -3,7 +3,7 @@
 **Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.**
 
 ## Introduction
-This tool predict disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations.
+This tool predict disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. A preprint of the method can be found at http://biorxiv.org/content/early/2016/06/13/058768.
 
 ## Prerequisites
 The software is developed and tested in Linux. You will need Python 2.7 and several pacakges to run it:
