@@ -170,12 +170,12 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
     ### save prior file (h2) ###
     h2_out = []
     for i in range(len(user_h2[:,0])):
-        h2_out.append(str(user_h2[:,0][i])+' '+str(user_h2[:,1][i])+' '+str(user_h2[:,2])+'\n')
+        h2_out.append(user_h2[:,0][i]+' '+user_h2[:,1][i]+' '+user_h2[:,2][i]+'\n')
 #    np.savetxt(output,(user_h2[:,0],user_h2[:,1],user_h2[:,2]),fmt="%s")
     ff = open(output,"w")
     ff.writelines(h2_out)
     ff.close()
-    return [np.sum(user_h2[:,2]), math.ceil(num_snps/3000.0)]
+    return [np.sum(user_h2[:,2].astype(np.float)), math.ceil(num_snps/3000.0)]
 
 
 
