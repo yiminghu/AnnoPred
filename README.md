@@ -1,7 +1,5 @@
 # AnnoPred
 
-**Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.**
-
 ## Introduction
 This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. A preprint of the method can be found at http://biorxiv.org/content/early/2016/06/13/058768.
 
@@ -87,4 +85,7 @@ When --user_h2 is not provided, AnnoPred will output a set of files including tw
 * test_output/test_pT_non_inf_prs_0.1.txt: AnnoPred PRS using the second type of priors (see manuscript for details).
 * test_output/test_pT_non_inf_auc_0.1.txt: prediction accuracy of AnnoPred PRS using the first prior: AUC for binary traits and correlation between PRS and y for continuous traits.
 * test_output/test_pT_non_inf_betas_0.1.txt: posterior expectation estimation of the effect size of each snps using the second type of prior.
+
+**Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.**
+
 
