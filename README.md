@@ -13,7 +13,7 @@ The software is developed and tested in Linux. You will need Python 2.7 and seve
 Besides these, you also need to have [LDSC](https://github.com/bulik/ldsc) installed (LDSC itself also has a list of prerequisites, please make sure they are also installed). If you only want to use your own heritability estimation for each SNP, you can skip this.
 
 ## Input Data
-* GWAS Summary statistics with a fixed format, for example:
+* GWAS Summary statistics with a fixed format, for example: test_data/GWAS_sumstats.txt
 * Reference/Validation genotype files, plink binary format, http://pngu.mgh.harvard.edu/~purcell/plink/
 
 ## Setup and Usage Example
