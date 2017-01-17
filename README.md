@@ -10,6 +10,15 @@ The software is developed and tested in Linux. You will need Python 2.7 and seve
 * scipy
 * numpy
 
+To install these packages, you can conveniently use **pip**. For example,
+```
+pip install h5py
+```
+or 
+```
+pip install --user h5py
+```
+
 Besides these, you also need to have [LDSC](https://github.com/bulik/ldsc) installed (LDSC itself also has a list of prerequisites, please make sure they are also installed). If you only want to use your own heritability estimation for each SNP, you can skip this.
 
 ## Input Data
