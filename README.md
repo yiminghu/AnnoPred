@@ -38,7 +38,7 @@ tar -zxvf AnnoPred_ref.tar.gz
 ```
 This step will generated a folder named ref containing functional annotations for AnnoPred.
 
-3) Setup LDSC: open LDSC.config and change /absolute/path/to/ldsc to the absolute path to LDSC in your local directory
+3) Setup LDSC: open LDSC.config and change /absolute/path/to/ldsc to the absolute path to LDSC in your local directory. Instruction on installing LDSC can be found at https://github.com/bulik/ldsc
 
 4) Example (when heritability estimation not provided):
 ```
