@@ -1,7 +1,7 @@
 # AnnoPred
 
 ## Introduction
-This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. A preprint of the method can be found at http://biorxiv.org/content/early/2016/06/13/058768.
+This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. The online version of manuscript can be found at http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005589.
 
 ## Prerequisites
 The software is developed and tested in Linux. You will need Python 2.7 and several pacakges to run it:
