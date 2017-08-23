@@ -199,7 +199,7 @@ def main(pdict):
     else:
       print 'LDSC results found! Continue calculating priors ...'
     pdict['h2file'] = tmp(pdict, "ldsc_h2.txt")
-    pdict['pTfile'] = tmp(pdict, "ldsc_pT"+pdict['P']+".txt")
+    pdict['pTfile'] = tmp(pdict, "ldsc_pT"+str(pdict['P'])+".txt")
     ld_r = prior_generating.generate_h2_pT(
              pdict['coord_out'], ldsc_result, 
              pdict['h2file'], pdict['P'], pdict['pTfile'])
