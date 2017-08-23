@@ -95,7 +95,7 @@ def process_args(args):
   pdict['N_ctrl'] = args.N_ctrl
   pdict['N'] = args.N_ctrl + args.N_case
 
-  if (args.P>0 and args.P<1):
+  if (args.P>0 and args.P<=1):
     pdict['P'] = args.P
   else:
     exit("Tuning parameter needs to be in (0,1)!")
