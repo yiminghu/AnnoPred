@@ -3,6 +3,8 @@
 ## Introduction
 This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. The online version of manuscript can be found at http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005589.
 
+For a quick start, you may run the pipeline.sh!
+
 ## Prerequisites
 The software is developed and tested in Linux. You will need Python 2.7 and several pacakges to run it:
 * h5py
@@ -38,7 +40,12 @@ tar -zxvf AnnoPred_ref.tar.gz
 ```
 This step will generated a folder named ref containing functional annotations for AnnoPred.
 
-3) Setup LDSC: open LDSC.config and change /absolute/path/to/ldsc to the absolute path to LDSC in your local directory. Instruction on installing LDSC can be found at https://github.com/bulik/ldsc.
+3) Setup LDSC: open LDSC.config and change /absolute/path/to/ldsc to the absolute path to LDSC in your local directory or use
+```
+LDSC_path="LDSC_path /your/path/to/ldsc" ## change to your ldsc path
+echo $LDSC_path > LDSC.config
+```
+Instruction on installing LDSC can be found at https://github.com/bulik/ldsc.
 
 4) Example (when heritability estimation not provided):
 ```
@@ -96,6 +103,77 @@ When --user_h2 is not provided, AnnoPred will output a set of files including tw
 * test_output/test_pT_non_inf_prs_0.1.txt: AnnoPred PRS using the second type of priors (see manuscript for details).
 * test_output/test_pT_non_inf_auc_0.1.txt: prediction accuracy of AnnoPred PRS using the first prior: AUC for binary traits and correlation between PRS and y for continuous traits.
 * test_output/test_pT_non_inf_betas_0.1.txt: posterior expectation estimation of the effect size of each snps using the second type of prior.
+
+## A pipeline for setting up cross-validation and get the average prediction accuracy (using the test data as an example)
+### Input files and paths
+```
+sumstats_path="test_data/GWAS_sumstats.txt" ## change to sumstats path
+individual_gt_path="test_data/test" ## change to individual level data (assuming using the same genotype file for reference and validation)
+Ncase=12171
+Nctrl=56862
+```
+### Divide individual genotype data into two parts
+```
+## set your own paths and file names for these files
+list_cv1="test_data/cv1.txt"
+list_cv2="test_data/cv2.txt"
+gt_cv1="test_data/cv1"
+gt_cv2="test_data/cv2"
+
+Rscript --vanilla split_cv.R $individual_gt_path".fam" $list_cv1 $list_cv2
+
+plink --bfile $individual_gt_path --keep $list_cv1 --make-bed --out $gt_cv1
+plink --bfile $individual_gt_path --keep $list_cv2 --make-bed --out $gt_cv2
+```
+### Set your own paths and file names for temporary and output files
+```
+tmp_path1="tmp_files" ## including ldsc results and prior files for cv1
+tmp_path2="tmp_files2" ## including ldsc results and prior files for cv2
+results_output="res_output" ## including prs, phenotypes, aucs and betas for cv1 and 2
+coord1=$tmp_path1"/coord"
+coord2=$tmp_path2"/coord"
+
+mkdir $tmp_path1
+mkdir $tmp_path2
+mkdir $results_output
+```
+### Run AnnoPred on different cv with a sequence of tuning parameters
+```
+## could be paralellized
+for p in 1.0 0.3 0.1 0.03 0.01 0.003 0.001 0.0003 0.0001 3e-05 1e-05
+do
+python AnnoPred.py\
+  --sumstats=$sumstats_path\
+  --ref_gt=$gt_cv1\
+  --val_gt=$gt_cv1\
+  --coord_out=$coord1\
+  --N_case=$Ncase\
+  --N_ctrl=$Nctrl\
+  --P=$p\
+  --local_ld_prefix=$tmp_path1"/local_ld"\
+  --out=$results_output"/cv1"\
+  --temp_dir=$tmp_path1
+done
+
+for p in 1.0 0.3 0.1 0.03 0.01 0.003 0.001 0.0003 0.0001 3e-05 1e-05
+do
+	python AnnoPred.py\
+	  --sumstats=$sumstats_path\
+	  --ref_gt=$gt_cv2\
+	  --val_gt=$gt_cv2\
+	  --coord_out=$coord2\
+	  --N_case=$Ncase\
+	  --N_ctrl=$Nctrl\
+	  --P=$p\
+	  --local_ld_prefix=$tmp_path2"/local_ld"\
+	  --out=$results_output"/cv2"\
+	  --temp_dir=$tmp_path2
+done
+```
+### Get average cv results
+```
+Rscript --vanilla results_cv.R $results_output"/cv1" $results_output"/cv2" "1.0 0.3 0.1 0.03 0.01 0.003 0.001 0.0003 0.0001 3e-05 1e-05"
+```
 
 ## Acknowledgement
 **Part of the code is modified from LDpred (https://bitbucket.org/bjarni_vilhjalmsson/ldpred). We thank Dr. Bjarni J. Vilhjalmsson for sharing his code.**
