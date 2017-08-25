@@ -142,17 +142,17 @@ mkdir $results_output
 ## could be paralellized
 for p in 1.0 0.3 0.1 0.03 0.01 0.003 0.001 0.0003 0.0001 3e-05 1e-05
 do
-python AnnoPred.py\
-  --sumstats=$sumstats_path\
-  --ref_gt=$gt_cv1\
-  --val_gt=$gt_cv1\
-  --coord_out=$coord1\
-  --N_case=$Ncase\
-  --N_ctrl=$Nctrl\
-  --P=$p\
-  --local_ld_prefix=$tmp_path1"/local_ld"\
-  --out=$results_output"/cv1"\
-  --temp_dir=$tmp_path1
+	python AnnoPred.py\
+	  --sumstats=$sumstats_path\
+	  --ref_gt=$gt_cv1\
+	  --val_gt=$gt_cv1\
+	  --coord_out=$coord1\
+	  --N_case=$Ncase\
+	  --N_ctrl=$Nctrl\
+	  --P=$p\
+	  --local_ld_prefix=$tmp_path1"/local_ld"\
+	  --out=$results_output"/cv1"\
+	  --temp_dir=$tmp_path1
 done
 
 for p in 1.0 0.3 0.1 0.03 0.01 0.003 0.001 0.0003 0.0001 3e-05 1e-05
