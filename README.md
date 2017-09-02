@@ -1,4 +1,5 @@
 # AnnoPred
+## Update 9/2/2017: 1.incorporate new annotations (GenoCanyon, GenoSkyline (7 tissue-specific), GenoSkylinePlus(66 cell-type-specific). 2. allow total sample size as input. Check out the new user manual and cross-validation pipeline!
 
 ## Introduction
 This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. The online version of manuscript can be found at http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005589.
@@ -35,8 +36,8 @@ git clone https://github.com/yiminghu/AnnoPred.git
 2) Download reference data
 ```
 cd AnnoPred
-wget http://genocanyon.med.yale.edu/AnnoPredFiles/AnnoPred_ref.tar.gz
-tar -zxvf AnnoPred_ref.tar.gz
+wget http://genocanyon.med.yale.edu/AnnoPredFiles/AnnoPred_ref1.0.tar.gz
+tar -zxvf AnnoPred_ref1.0.tar.gz
 ```
 This step will generated a folder named ref containing functional annotations for AnnoPred.
 
@@ -56,8 +57,8 @@ python AnnoPred.py\
   --ref_gt=test_data/test\
   --val_gt=test_data/test\
   --coord_out=test_output/coord_out\
-  --N_case=12171\
-  --N_ctrl=56862\
+  --N_sample=69033\
+  --annotation_flag="tier3"\
   --P=0.1\
   --local_ld_prefix=tmp_test/local_ld\
   --out=test_output/test\
@@ -70,8 +71,12 @@ The example command parameters mean:
 * --ref_gt=test_data/test: path to the reference genotype data. We suggest also using validation data as reference data. Plink binary format (.bed, .bim, .fam), description can be * found in .
 * --val_gt=test_data/test: path to the validation genotype data. Plink binary format, the sixth column in fam file cannot be missing.
 * --coord_out=test_output/coord_out: path for saving a h5py file, which contains validation genotypes, summary statistics and standardized effect sizes of SNPs in common.
-* --N_case=12171: number of cases in GWAS
-* --N_ctrl=56862: number of controls in GWAS
+* --N_sample=69033: sample size of GWAS
+* --annotation_flag="tier3": we now incorporate four tiers of functional annotations in AnnoPred:
+* tier0: baseline + GenoCanyon + GenoSkyline (Brain, GI, Lung, Heart, Blood, Muscle, Epithelial)
+* tier1: baseline + GenoCanyon
+* tier2: baseline + GenoCanyon + 7 GenoSkylinePlus (Immune, Brain, CV, Muscle, GI, Epithelial)
+* tier3: baseline + GenoCanyon + GenoSkylinePlus (66 Roadmap cell type specific functional annotations)
 * --P=0.1: pre-spesified parameter, the proportion of causal variants
 * --local_ld_prefix=tmp_test/local_ld: a path for saving a cPickle file, which contains LD matrix
 * --out=test_output/test: a path for output files
@@ -84,8 +89,8 @@ python AnnoPred.py\
   --ref_gt=test_data/test\
   --val_gt=test_data/test\
   --coord_out=test_output/coord_out\
-  --N_case=12171\
-  --N_ctrl=56862\
+  --N_sample=69033\
+  --annotation_flag="tier3"\
   --P=0.1\
   --user_h2=test_data/user_h2_est.txt
   --local_ld_prefix=tmp_test/local_ld\
@@ -105,12 +110,20 @@ When --user_h2 is not provided, AnnoPred will output a set of files including tw
 * test_output/test_pT_non_inf_betas_0.1.txt: posterior expectation estimation of the effect size of each snps using the second type of prior.
 
 ## A pipeline for setting up cross-validation and get the average prediction accuracy (using the test data as an example)
+### Set annotation tiers 
+```
+# tier0: baseline + GenoCanyon + 7 GenoSkyline (Brain, GI, Lung, Heart, Blood, Muscle, Epithelial)
+# tier1: baseline + GenoCanyon
+# tier2: baseline + GenoCanyon + 7 GenoSkyline_Plus (Immune, Brain, CV, Muscle, GI, Epithelial)
+# tier3: baseline + GenoCanyon + 66 GenoSkyline
+annotation_flag="tier3"
+```
+
 ### Input files and paths
 ```
 sumstats_path="test_data/GWAS_sumstats.txt" ## change to sumstats path
 individual_gt_path="test_data/test" ## change to individual level data (assuming using the same genotype file for reference and validation)
-Ncase=12171
-Nctrl=56862
+N_sample=69033
 ```
 ### Divide individual genotype data into two parts
 ```
@@ -126,16 +139,19 @@ plink --bfile $individual_gt_path --keep $list_cv1 --make-bed --out $gt_cv1
 plink --bfile $individual_gt_path --keep $list_cv2 --make-bed --out $gt_cv2
 ```
 ### Set your own paths and file names for temporary and output files
+#### Please use different tmp_path for different datasets!! Otherwise load incorrect ldsc results and prior files!!
 ```
-tmp_path1="tmp_files" ## including ldsc results and prior files for cv1
-tmp_path2="tmp_files2" ## including ldsc results and prior files for cv2
-results_output="res_output" ## including prs, phenotypes, aucs and betas for cv1 and 2
+mkdir $annotation_flag ## save results by annotation tiers
+tmp_path1=$annotation_flag"/tmp_files1" ## including ldsc results and prior files for cv1
+tmp_path2=$annotation_flag"/tmp_files2" ## including ldsc results and prior files for cv2
+results_output=$annotation_flag"/res_output" ## including prs, phenotypes, aucs and betas for cv1 and 2
 coord1=$tmp_path1"/coord"
 coord2=$tmp_path2"/coord"
 
 mkdir $tmp_path1
 mkdir $tmp_path2
 mkdir $results_output
+
 ```
 ### Run AnnoPred on different cv with a sequence of tuning parameters
 ```
@@ -147,8 +163,8 @@ do
 	  --ref_gt=$gt_cv1\
 	  --val_gt=$gt_cv1\
 	  --coord_out=$coord1\
-	  --N_case=$Ncase\
-	  --N_ctrl=$Nctrl\
+	  --N_sample=$N_sample\
+	  --annotation_flag=$annotation_flag\
 	  --P=$p\
 	  --local_ld_prefix=$tmp_path1"/local_ld"\
 	  --out=$results_output"/cv1"\
@@ -162,8 +178,8 @@ do
 	  --ref_gt=$gt_cv2\
 	  --val_gt=$gt_cv2\
 	  --coord_out=$coord2\
-	  --N_case=$Ncase\
-	  --N_ctrl=$Nctrl\
+	  --N_sample=$N_sample\
+	  --annotation_flag=$annotation_flag\
 	  --P=$p\
 	  --local_ld_prefix=$tmp_path2"/local_ld"\
 	  --out=$results_output"/cv2"\
