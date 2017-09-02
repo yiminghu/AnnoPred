@@ -332,14 +332,14 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
             if corr<0:
                 risk_scores_pval_derived = -1* risk_scores_pval_derived
             auc = pred_accuracy(y,risk_scores_pval_derived)
-            print 'AnnoPred AUC for the whole genome was: %0.4f'%auc
-            out.append('AUC for the whole genome was: '+str(auc)+'\n')
+            print 'AnnoPred AUC/COR for the whole genome was: %0.4f'%auc
+            out.append('AUC/COR for the whole genome was: '+str(auc)+'\n')
     
             if corr_inf<0:
                 risk_scores_pval_derived_inf = -1* risk_scores_pval_derived_inf
             auc_inf = pred_accuracy(y,risk_scores_pval_derived_inf)
-            print 'AnnoPred-inf AUC for the whole genome was: %0.4f'%auc_inf
-            out_inf.append('AUC for the whole genome was: '+str(auc_inf)+'\n')
+            print 'AnnoPred-inf AUC/COR for the whole genome was: %0.4f'%auc_inf
+            out_inf.append('AUC/COR for the whole genome was: '+str(auc_inf)+'\n')
     
             sp.savetxt('%s_y_'%(out_file_prefix)+str(p)+'.txt',y)
             sp.savetxt('%s_prs_'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived)
