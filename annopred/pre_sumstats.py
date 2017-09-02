@@ -3,7 +3,7 @@ import h5py
 
 def get_1000G_snps(sumstats, out_file):
     sf = np.loadtxt(sumstats,dtype=str,skiprows=1)
-    h5f = h5py.File('ref/Misc/1000G_SNP_info.h5','r')
+    h5f = h5py.File('ref/AnnotMatrix/1000G_SNP_info.h5','r')
     rf = h5f['snp_chr'][:]
     h5f.close()
     ind1 = np.in1d(sf[:,1],rf[:,2])
