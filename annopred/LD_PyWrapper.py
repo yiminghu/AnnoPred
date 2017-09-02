@@ -22,22 +22,33 @@ def loadLDPath():
         return ldPath
 
 #Assembles call for munge_sumstats. Returns path to formatted summary statistics in ref/Misc
-def callMunge(sumstats, n_case, n_ctrl, ldPath, refPath):
+def callMunge(sumstats, n_sample, ldPath, refPath):
     print("Calling munge_sumstats.py...")
-    mungeFlags = ["--" + flag for flag in ["N-cas", "N-con", "merge-alleles", "sumstats", "out"]]
-    mungeArgs = [n_case, n_ctrl, refPath + "Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
+    mungeFlags = ["--" + flag for flag in ["N", "merge-alleles", "sumstats", "out"]]
+    mungeArgs = [n_sample, refPath + "Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
     mungeOptsList = [(f,a) for f,a in zip(mungeFlags, mungeArgs)]
     mungeOpts = formatOptions(mungeOptsList)
     subprocess.call(["python", ldPath + "/munge_sumstats.py"] + mungeOpts)
-    return mungeArgs[4]
+    return mungeArgs[3]
 
 #Assembles call to LDSC software. Returns path to SNP heritablility file in ref/Misc
-def callLDSC(sumstats, n_case, n_ctrl, results_path):
+def callLDSC(sumstats, n_sample, results_path, annotation_flag):
     ldPath = loadLDPath()
     refPath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + "/ref/"
     SkylineAnnotations = ["Brain", "GI", "Lung", "Heart", "Blood", "Muscle", "Epithelial"]
-    AnnotationPaths = ["/Annotations/Baseline/baseline.", "/Annotations/GenoCanyon/GenoCanyon_Func."] + ["/Annotations/GenoSkyline/" + g + "." for g in SkylineAnnotations] 
-    mungeFile = callMunge(sumstats, str(n_case), str(n_ctrl), ldPath, refPath)
+    #GS_tiers = ["GenoSkyline_Plus_Tier"+str(i)+"." for i in range(1,4)]
+    if annotation_flag == "tier0":
+        AnnotationPaths = ["/Annotations/Baseline/baseline.", "/Annotations/GenoCanyon/GenoCanyon_Func."] + ["/Annotations/GenoSkyline/" + g + "." for g in SkylineAnnotations]
+    elif annotation_flag == "tier1":
+        AnnotationPaths = ["/Annotations/Baseline/baseline.", "/Annotations/GenoSkyline_Plus/GenoSkyline_Plus_Tier1."]
+    elif annotation_flag == "tier2":
+        AnnotationPaths = ["/Annotations/Baseline/baseline.", "/Annotations/GenoSkyline_Plus/GenoSkyline_Plus_Tier2."]
+    elif annotation_flag == "tier3":
+        AnnotationPaths = ["/Annotations/Baseline/baseline.", "/Annotations/GenoSkyline_Plus/GenoSkyline_Plus_Tier3."]
+    else:
+        exit("Illegal annotation flag!")
+
+    mungeFile = callMunge(sumstats, str(n_sample), ldPath, refPath)
     refFiles = [refPath + a for a in AnnotationPaths]
     print("Running LD Score calculation...")
     ldscFlags = ["--" + flag for flag in ["h2", "ref-ld-chr", "w-ld-chr", "frqfile-chr", "overlap-annot", "print-coefficients", "out"]]
@@ -48,6 +59,6 @@ def callLDSC(sumstats, n_case, n_ctrl, results_path):
     return ldscArgs[6] + ".results"
 
 if __name__ == "__main__":
-    callLDSC(sys.argv[1], sys.argv[2], sys.argv[3])
+    callLDSC(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
 
