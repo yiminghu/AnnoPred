@@ -1,5 +1,7 @@
 # AnnoPred
-## Update 9/2/2017: 1.incorporate new annotations (GenoCanyon, GenoSkyline (7 tissue-specific), GenoSkylinePlus(66 cell-type-specific). 2. allow total sample size as input. Check out the new user manual and cross-validation pipeline!
+### Update 9/2/2017: 
+### 1.incorporate new annotations (GenoCanyon, GenoSkyline (7 tissue-specific), GenoSkylinePlus(66 cell-type-specific).
+### 2. allow total sample size as input. Check out the new user manual and cross-validation pipeline!
 
 ## Introduction
 This tool predicts disease risk from genotype data using large GWAS summary statistics as training data and integrating functional annotations. The online version of manuscript can be found at http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005589.
