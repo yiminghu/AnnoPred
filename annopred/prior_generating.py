@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 ### generate prior file from h5py file directly ###
 ### generate_h2_pT generates two prior files from the results of LDSC and a fixed annotation file ###
 ### generate_h2_from_user generates one prior file from the user provided prior file ###
@@ -9,15 +11,34 @@ from collections import defaultdict
 import datetime
 import math
 
-def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT):
+def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT, annotation_flag):
     # generate two types of prior files
     ### load the fixed input file ###
-#    if len(PS)==1:
-#        PS = [PS]
-    h5f1 = h5py.File('ref/Misc/GC1_GS7_Baseline53.h5','r')
-    annot = h5f1['annot'][:]
+    h5f1 = h5py.File('ref/AnnotMatrix/baseline.h5','r')
+    baseline = h5f1['annot'][:]
     h5f1.close()
-    h5f2 = h5py.File('ref/Misc/1000G_SNP_info.h5','r')
+
+    if annotation_flag=='tier0':
+        h5f1 = h5py.File('ref/AnnotMatrix/tier0.h5','r')
+        tier = h5f1['annot'][:]
+        h5f1.close()
+    elif annotation_flag=='tier1':
+        h5f1 = h5py.File('ref/AnnotMatrix/tier1.h5','r')
+        tier = h5f1['annot'][:]
+        h5f1.close()
+    elif annotation_flag=='tier2':
+        h5f1 = h5py.File('ref/AnnotMatrix/tier2.h5','r')
+        tier = h5f1['annot'][:]
+        h5f1.close()
+    elif annotation_flag=='tier3':
+        h5f1 = h5py.File('ref/AnnotMatrix/tier3.h5','r')
+        tier = h5f1['annot'][:]
+        h5f1.close()
+    else:
+        exit("Illegal tier name!")
+    
+    annot = np.concatenate((baseline,tier),axis=1)
+    h5f2 = h5py.File('ref/AnnotMatrix/1000G_SNP_info.h5','r')
     snp_chr = h5f2['snp_chr'][:]
     h5f2.close()
     ### get the snp list from h5py ###
@@ -176,9 +197,3 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
     ff.writelines(h2_out)
     ff.close()
     return [np.sum(user_h2[:,2].astype(np.float)), math.ceil(num_snps/3000.0)]
-
-
-
-
-
-
