@@ -194,7 +194,7 @@ def main(pdict):
     ldsc_result = tmp(pdict, pdict['annotation_flag'])
     if not isfile(ldsc_result+'_ldsc.results'):
       LD_PyWrapper.callLDSC(
-          org_sumstats, pdict['N'], ldsc_result+'_ldsc.results', pdict['annotation_flag'])
+          org_sumstats, pdict['N'], ldsc_result+'_ldsc', pdict['annotation_flag'])
     else:
       print 'LDSC results found! Continue calculating priors ...'
     pdict['h2file'] = tmp(pdict, pdict['annotation_flag'] + "_ldsc_h2.txt")
