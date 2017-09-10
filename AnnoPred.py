@@ -192,7 +192,7 @@ def main(pdict):
     print 'User-provided heritability file not found. Generating priors...'
 #    if isfile()
     ldsc_result = tmp(pdict, pdict['annotation_flag'])
-    if not isfile(ldsc_result):
+    if not isfile(ldsc_result+'_ldsc.results'):
       LD_PyWrapper.callLDSC(
           org_sumstats, pdict['N'], ldsc_result+'_ldsc.results', pdict['annotation_flag'])
     else:
