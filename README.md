@@ -12,7 +12,7 @@ The software is developed and tested in Linux. You will need Python 2.7 and seve
 * plinkio
 * scipy
 * numpy
-
+* sklearn
 To install these packages, you can conveniently use **pip**. For example,
 ```
 pip install h5py
