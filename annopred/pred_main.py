@@ -131,9 +131,10 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
         'Validation phenotypes found.'
         y = df['y'][...]  # Phenotype
         num_individs = len(y)
-        risk_scores_pval_derived = sp.zeros(num_individs)
-        risk_scores_pval_derived_inf = sp.zeros(num_individs)
         has_phenotypes=True
+    
+    risk_scores_pval_derived = sp.zeros(num_individs)
+    risk_scores_pval_derived_inf = sp.zeros(num_individs)
 
     ld_scores_dict = ld_dict['ld_scores_dict']
     chrom_ld_dict = ld_dict['chrom_ld_dict']
