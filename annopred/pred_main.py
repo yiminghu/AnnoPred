@@ -239,11 +239,11 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
         for chrom_str in chromosomes_list:
             if chrom_str in cord_data_g.keys():
                 g = cord_data_g[chrom_str]
-                if has_phenotypes:
-                    if 'raw_snps_val' in g.keys():
-                        raw_snps = g['raw_snps_val'][...]
-                    else:
-                        raw_snps = g['raw_snps_ref'][...]
+                #if has_phenotypes:
+                if 'raw_snps_val' in g.keys():
+                    raw_snps = g['raw_snps_val'][...]
+                else:
+                    raw_snps = g['raw_snps_ref'][...]
                 
                 #Filter monomorphic SNPs
                 snp_stds = g['snp_stds_ref'][...]
@@ -294,11 +294,12 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                 updated_inf_betas = updated_inf_betas / (snp_stds.flatten())
                 annopred_effect_sizes.extend(updated_betas)
                 annopred_inf_effect_sizes.extend(updated_inf_betas)
+                #if has_phenotypes:
+                prs = sp.dot(updated_betas, raw_snps)
+                prs_inf = sp.dot(updated_inf_betas, raw_snps)
+                risk_scores_pval_derived += prs
+                risk_scores_pval_derived_inf += prs_inf
                 if has_phenotypes:
-                    prs = sp.dot(updated_betas, raw_snps)
-                    prs_inf = sp.dot(updated_inf_betas, raw_snps)
-                    risk_scores_pval_derived += prs
-                    risk_scores_pval_derived_inf += prs_inf
                     corr = sp.corrcoef(y, prs)[0, 1]
                     r2 = corr ** 2
                     corr_inf = sp.corrcoef(y, prs_inf)[0, 1]
@@ -342,8 +343,8 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
             out_inf.append('AUC/COR for the whole genome was: '+str(auc_inf)+'\n')
     
             sp.savetxt('%s_y_'%(out_file_prefix)+str(p)+'.txt',y)
-            sp.savetxt('%s_prs_'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived)
-            sp.savetxt('%s_prs-inf'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived_inf)
+            #sp.savetxt('%s_prs_'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived)
+            #sp.savetxt('%s_prs-inf'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived_inf)
     
             #Now calibration                               
             denominator = sp.dot(risk_scores_pval_derived.T, risk_scores_pval_derived)
@@ -361,7 +362,9 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
             ff_inf = open('%s_inf_auc_'%(out_file_prefix)+str(p)+'.txt',"w")
             ff_inf.writelines(out_inf)
             ff_inf.close()
-        
+            
+        sp.savetxt('%s_prs_'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived)
+        sp.savetxt('%s_prs-inf'%(out_file_prefix)+str(p)+'.txt',risk_scores_pval_derived_inf)
         weights_out_file = '%s_non_inf_betas_'%(out_file_prefix)+str(p)+'.txt' ###################################
         with open(weights_out_file,'w') as f:
             f.write('chrom    pos    sid    nt1    nt2    raw_beta     AnnoPred_beta\n')
