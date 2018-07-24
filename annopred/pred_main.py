@@ -160,7 +160,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
     gw_h2_ld_score_est = max(0.0001, (max(1, chi_square_lambda) - 1) / (n * (L / num_snps)))
     print 'Estimated genome-wide heritability:', gw_h2_ld_score_est
     
-    assert chi_square_lambda>1, 'Check the summary statistic file'
+    #assert chi_square_lambda>1, 'Check the summary statistic file'
     if h2 is None:
         h2 = gw_h2_ld_score_est
     print h2
