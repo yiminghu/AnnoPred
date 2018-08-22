@@ -27,6 +27,7 @@ Besides these, you also need to have [LDSC](https://github.com/bulik/ldsc) insta
 ## Input Data
 * GWAS Summary statistics with a fixed format, for example: test_data/GWAS_sumstats.txt
 * Reference/Validation genotype files, plink binary format, http://pngu.mgh.harvard.edu/~purcell/plink/
+* **Imputed genotype files can be first converted to plink format and then parsed to AnnoPred** http://vcftools.sourceforge.net/documentation.html#plink, this would increase the number of SNPs and for efficient computation, the **--ld_radius** should be manually parsed and set to a reasonable number.
 
 ## Setup and Usage Example
 1) Clone this repository
