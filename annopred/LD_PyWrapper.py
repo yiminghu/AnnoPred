@@ -24,8 +24,10 @@ def loadLDPath():
 #Assembles call for munge_sumstats. Returns path to formatted summary statistics in ref/Misc
 def callMunge(sumstats, n_sample, ldPath, refPath):
     print("Calling munge_sumstats.py...")
-    mungeFlags = ["--" + flag for flag in ["N", "merge-alleles", "sumstats", "out"]]
-    mungeArgs = [n_sample, refPath + "Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
+    #mungeFlags = ["--" + flag for flag in ["N", "merge-alleles", "sumstats", "out"]]
+    mungeFlags = ["--" + flag for flag in ["N", "sumstats", "out"]]
+    #mungeArgs = [n_sample, refPath + "Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
+    mungeArgs = [n_sample, sumstats, refPath+"/Misc/Curated_GWAS"]
     mungeOptsList = [(f,a) for f,a in zip(mungeFlags, mungeArgs)]
     mungeOpts = formatOptions(mungeOptsList)
     subprocess.call(["python", ldPath + "/munge_sumstats.py"] + mungeOpts)
