@@ -13,6 +13,7 @@ The software is developed and tested in Linux. You will need Python 2.7 and seve
 * scipy
 * numpy
 * sklearn
+* pandas == 0.18.1 (this is a required for munge step in LDSC, see https://github.com/bulik/ldsc/issues/104)
 To install these packages, you can conveniently use **pip**. For example,
 ```
 pip install h5py
