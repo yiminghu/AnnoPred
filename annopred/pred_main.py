@@ -444,7 +444,7 @@ def non_infinitesimal_mcmc(beta_hats, Pi, Sigi2, sig_12, start_betas=None, h2=No
         
                 if rand_ps[i] < postp * alpha:
                     #Sample from the posterior Gaussian dist.
-                    proposed_beta = stats.norm.rvs(0, (hdmp_hdmpn) * sig_12, size=1) + hdmp_hdmpn * res_beta_hat_i
+                    proposed_beta = stats.norm.rvs(0, np.sqrt((hdmp_hdmpn) * sig_12), size=1) + hdmp_hdmpn * res_beta_hat_i
         
                 else:
                     #Sample 0
