@@ -1,4 +1,5 @@
 # AnnoPred
+
 ### Update 9/2/2017: 
 ### 1. Incorporate new annotations (GenoCanyon, GenoSkyline (7 tissue-specific), GenoSkylinePlus(66 cell-type-specific).
 ### 2. Allow total sample size as input. Check out the new user manual and cross-validation pipeline!
@@ -36,6 +37,7 @@ Besides these, you also need to have [LDSC](https://github.com/bulik/ldsc) insta
 git clone https://github.com/yiminghu/AnnoPred.git
 ```
 2) Download reference data
+### Update 2020/12/08 the link below is no longer available, please use https://drive.google.com/drive/u/1/folders/1mwvCiLxewH6M_MrnD-ZUih5T93-JQpaT for downloading the reference data.
 ```
 cd AnnoPred
 wget http://genocanyon.med.yale.edu/AnnoPredFiles/AnnoPred_ref1.0.tar.gz
