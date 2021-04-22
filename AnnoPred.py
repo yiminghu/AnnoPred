@@ -3,9 +3,19 @@
 from argparse import ArgumentParser
 from os.path import isfile, isdir, join
 from sys import exit
+import logging, os
 
 from annopred import prior_generating, coord_trimmed, pre_sumstats
-from annopred import pred_main, LD_PyWrapper
+from annopred import LD_PyWrapper
+
+if os.getenv("AP_predmain") == 'pred_main_par':
+  from annopred import pred_main_par as pred_main
+elif os.getenv("AP_predmain") == 'pred_main_global':
+  from annopred import pred_main_global as pred_main
+elif os.getenv("AP_predmain") == 'pred_main_fixed':
+  from annopred import pred_main_fixed as pred_main
+else:
+  logging.error("Bad value for AP_predmain")
 
 # Create the master argparser and returns the argparser object
 def get_argparser():
@@ -169,34 +179,35 @@ def pdict_pred_user(pdict):
   d['user_h2'] = pdict['user_h2_trimmed']
   return d
 
+#@profile
 def main(pdict):
   print(pdict)
   # Filter SNPs
-  print 'Filtering Summary Stats...'
+  logging.info('Filtering Summary Stats...')
   org_sumstats = pdict['sumstats']
   sumstats_filtered = tmp(pdict, "sumstats_filtered.txt")
   if not isfile(sumstats_filtered):
     pre_sumstats.get_1000G_snps(pdict['sumstats'], sumstats_filtered)
     pdict['sumstats'] = sumstats_filtered
   else:
-    print 'Filtered sumstats found, start coordinating genotypes...'
+    logging.debug('Filtered sumstats found, start coordinating genotypes...')
 
   # Generate coord_genotypes H5 file
-  print 'Coordinate summary stats and validation/reference genotype data...'
+  logging.debug('Coordinate summary stats and validation/reference genotype data...')
   if not isfile(pdict_coord_trimmed(pdict)['out']):
     coord_trimmed.main(pdict_coord_trimmed(pdict))
   else:
-    print 'Coord file already exists! Continue calculating priors...'
+    logging.debug('Coord file already exists! Continue calculating priors...')
 
   if pdict['need_LDSC']:
-    print 'User-provided heritability file not found. Generating priors...'
+    logging.debug('User-provided heritability file not found. Generating priors...')
 #    if isfile()
     ldsc_result = tmp(pdict, pdict['annotation_flag'])
     if not isfile(ldsc_result+'_ldsc.results'):
       LD_PyWrapper.callLDSC(
           org_sumstats, pdict['N'], ldsc_result+'_ldsc', pdict['annotation_flag'])
     else:
-      print 'LDSC results found! Continue calculating priors ...'
+      logging.debug('LDSC results found! Continue calculating priors ...')
     pdict['h2file'] = tmp(pdict, pdict['annotation_flag'] + "_ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, pdict['annotation_flag'] + "_ldsc_pT"+str(pdict['P'])+".txt")
     ld_r = prior_generating.generate_h2_pT(
@@ -204,19 +215,23 @@ def main(pdict):
              pdict['h2file'], pdict['P'], pdict['pTfile'], pdict['annotation_flag'])
     if pdict['need_ld_radius']: 
       pdict['ld_radius'] = int(ld_r)
-    print 'Starting AnnoPred...'
+    logging.info('Starting AnnoPred...')
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
-    print 'User-provided heritability file found. Extracting SNPs in common...'
+    logging.debug('User-provided heritability file found. Extracting SNPs in common...')
     pdict['user_h2_trimmed'] = tmp(pdict, "user_h2_trimmed.txt")
     pdict['H2'], ld_r = prior_generating.generate_h2_from_user(
            pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
     if pdict['need_ld_radius']:
       pdict['ld_radius'] = int(ld_r)
-    print 'Starting AnnoPred...'
+    logging.info('Starting AnnoPred...')
     pred_main.main(pdict_pred_user(pdict))
 
 
 if __name__ == '__main__':
   args = get_argparser().parse_args()
+
+  # set up logging
+  logging.basicConfig(level="DEBUG", format='%(asctime)s %(relativeCreated)s %(levelname)s %(threadName)s %(filename)s:%(lineno)d - %(message)s')
+
   main(process_args(args))
