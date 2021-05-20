@@ -9,13 +9,14 @@ from annopred import prior_generating, coord_trimmed, pre_sumstats
 from annopred import LD_PyWrapper
 
 if os.getenv("AP_predmain") == 'pred_main_par':
+  logging.info("Using pred_main_par")
   from annopred import pred_main_par as pred_main
 elif os.getenv("AP_predmain") == 'pred_main_global':
+  logging.info("Using pred_main_global")
   from annopred import pred_main_global as pred_main
-elif os.getenv("AP_predmain") == 'pred_main_fixed':
-  from annopred import pred_main_fixed as pred_main
 else:
-  logging.error("Bad value for AP_predmain")
+  from annopred import pred_main_fixed as pred_main
+  logging.info("Using pred_main_fixed")
 
 # Create the master argparser and returns the argparser object
 def get_argparser():
