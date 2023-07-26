@@ -18,7 +18,7 @@ def loadLDPath():
         raise Exception("Please provide LDSC.config file in the AnnoPred directory")
     with open(configPath, "r") as fp:
         option = fp.readline().split()
-        ldPath = option[1]
+        ldPath = option[0]
         return ldPath
 
 #Assembles call for munge_sumstats. Returns path to formatted summary statistics in ref/Misc
@@ -26,7 +26,7 @@ def callMunge(sumstats, n_sample, ldPath, refPath):
     print("Calling munge_sumstats.py...")
     mungeFlags = ["--" + flag for flag in ["N", "merge-alleles", "sumstats", "out"]]
     #mungeFlags = ["--" + flag for flag in ["N", "sumstats", "out"]]
-    mungeArgs = [n_sample, refPath + "Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
+    mungeArgs = [n_sample, refPath + "/Misc/w_hm3.snplist", sumstats, refPath+"/Misc/Curated_GWAS"]
     #mungeArgs = [n_sample, sumstats, refPath+"/Misc/Curated_GWAS"]
     mungeOptsList = [(f,a) for f,a in zip(mungeFlags, mungeArgs)]
     mungeOpts = formatOptions(mungeOptsList)
@@ -36,7 +36,7 @@ def callMunge(sumstats, n_sample, ldPath, refPath):
 #Assembles call to LDSC software. Returns path to SNP heritablility file in ref/Misc
 def callLDSC(sumstats, n_sample, results_path, annotation_flag):
     ldPath = loadLDPath()
-    refPath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + "/ref/"
+    refPath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) + "/ref"
     SkylineAnnotations = ["Brain", "GI", "Lung", "Heart", "Blood", "Muscle", "Epithelial"]
     #GS_tiers = ["GenoSkyline_Plus_Tier"+str(i)+"." for i in range(1,4)]
     if annotation_flag == "tier0":
