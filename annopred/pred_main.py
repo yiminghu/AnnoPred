@@ -3,7 +3,7 @@
 try: 
     import scipy as sp
 except Exception:
-    print 'Using Numpy instead of Scipy.'
+    print('Using Numpy instead of Scipy.')
     import numpy as sp
     
 #from numpy import linalg 
@@ -29,7 +29,7 @@ import itertools as it
 import h5py
 import scipy as sp
 from scipy import stats
-import cPickle
+import pickle
 from sklearn import metrics
 
 
@@ -40,7 +40,7 @@ chromosomes_list.append('chrom_X')
 def pred_accuracy(y_true, y_pred):
     y_true = sp.copy(y_true)
     if len(sp.unique(y_true))==2:
-        print 'dichotomous trait, calculating AUC'
+        print('dichotomous trait, calculating AUC')
         y_min = y_true.min()
         y_max = y_true.max()
         if y_min!= 0 or y_max!=1:
@@ -50,7 +50,7 @@ def pred_accuracy(y_true, y_pred):
         auc = metrics.auc(fpr, tpr)
         return auc
     else:
-        print 'continuous trait, calculating COR'
+        print('continuous trait, calculating COR')
         cor = sp.corrcoef(y_true,y_pred)[0,1]
         return cor
 
@@ -62,7 +62,7 @@ def get_LDpred_ld_tables(snps, ld_radius=100, ld_window_size=0):
     
     ld_dict = {}
     m,n = snps.shape
-    print m,n
+    print(m,n)
     ld_scores = sp.ones(m)
     ret_dict = {}
     for snp_i, snp in enumerate(snps):
@@ -139,7 +139,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
     chrom_ld_dict = ld_dict['chrom_ld_dict']
     chrom_ref_ld_mats = ld_dict['chrom_ref_ld_mats']
         
-    print 'LD radius used: %d' % ld_radius
+    print('LD radius used: %d' % ld_radius)
     results_dict = {}
     num_snps = 0
     sum_beta2s = 0
@@ -155,24 +155,24 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
         
     L = ld_scores_dict['avg_gw_ld_score']
     chi_square_lambda = sp.mean(n * sum_beta2s / float(num_snps))
-#    print 'Genome-wide lambda inflation:', chi_square_lambda,
-    print 'Genome-wide mean LD score:', L
+#    print('Genome-wide lambda inflation:', chi_square_lambda,)
+    print('Genome-wide mean LD score:', L)
     gw_h2_ld_score_est = max(0.0001, (max(1, chi_square_lambda) - 1) / (n * (L / num_snps)))
-    print 'Estimated genome-wide heritability:', gw_h2_ld_score_est
+    print('Estimated genome-wide heritability:', gw_h2_ld_score_est)
     
     #assert chi_square_lambda>1, 'Check the summary statistic file'
     if h2 is None:
         h2 = gw_h2_ld_score_est
-    print h2
+    print(h2)
     h2_new = sp.sum(prf_sigi2)
     sig_12 = (1.0)/n     #######################
     pr_sig = {}
     pr_p = {}
     annopred_inf_chrom_dict = {}
-    print 'Calculating initial values for MCMC using infinitesimal model'
+    print('Calculating initial values for MCMC using infinitesimal model')
     for chrom_str in chromosomes_list:
         if chrom_str in cord_data_g.keys():
-            print 'Calculating posterior betas for Chromosome %s'%((chrom_str.split('_'))[1])           
+            print('Calculating posterior betas for Chromosome %s'%((chrom_str.split('_'))[1]))           
             g = cord_data_g[chrom_str]
 
             #Filter monomorphic SNPs
@@ -192,14 +192,14 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                     pr_p[chrom_str] = sp.copy(prf_pi_chri)
                     pr_sig[chrom_str] = sp.copy(prf_sigi2_chri)
                 else:
-                    print 'Order of SNPs does not match, sorting prior files'
+                    print('Order of SNPs does not match, sorting prior files')
                     pr_p[chrom_str] = sp.zeros(len(sids))
                     pr_sig[chrom_str] = sp.zeros(len(sids))
                     for i, sid in enumerate(sids):
                         pr_p[chrom_str][i] = prf_pi_chri[prf_sids_chri==sid]
                         pr_sig[chrom_str][i] = prf_sigi2_chri[prf_sids_chri==sid]
             else:
-                print 'More SNPs found in prior file, extracting SNPs from prior files'
+                print('More SNPs found in prior file, extracting SNPs from prior files')
                 pr_p[chrom_str] = sp.zeros(len(sids))
                 pr_sig[chrom_str] = sp.zeros(len(sids))
                 for i, sid in enumerate(sids):
@@ -215,7 +215,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
     
     
     for p in ps:
-        print 'Starting AnnoPred with ', p
+        print('Starting AnnoPred with ', p)
         p_str = p
         results_dict[p_str]={}
         
@@ -234,8 +234,8 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
         out.append('The input prior p is '+str(prf_pi[0])+'\n')
         out.append('Estimated Genome-wide heritability: '+str(gw_h2_ld_score_est)+'\n')
         out.append('Posterior variance for each snp: '+str(sig_12)+'\n')
-        print 'Estimated Genome-wide heritability from Priors:', h2
-        print 'Posterior variance for each snp:', sig_12 
+        print('Estimated Genome-wide heritability from Priors:', h2)
+        print('Posterior variance for each snp:', sig_12)
         for chrom_str in chromosomes_list:
             if chrom_str in cord_data_g.keys():
                 g = cord_data_g[chrom_str]
@@ -278,7 +278,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                     #h2_chrom = h2 * (n_snps / float(num_snps))            
                 else:
                     h2_chrom = gw_h2_ld_score_est * (n_snps / float(num_snps))
-                #print 'Prior parameters: p=%0.3f, n=%d, m=%d, h2_chrom=%0.4f' % (p, n, n_snps, h2_chrom)
+                #print('Prior parameters: p=%0.3f, n=%d, m=%d, h2_chrom=%0.4f' % (p, n, n_snps, h2_chrom))
                 res_dict = non_infinitesimal_mcmc(pval_derived_betas, Pi = prf_pi_chri_sorted, Sigi2=prf_sigi2_chri_sorted, sig_12=sig_12, h2=h2_chrom, n=n, ld_radius=ld_radius,
                                         num_iter=num_iter, burn_in=burn_in, ld_dict=chrom_ld_dict[chrom_str],
                                         start_betas=annopred_inf_chrom_dict[chrom_str], zero_jump_prob=zero_jump_prob)            
@@ -286,10 +286,10 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                 updated_inf_betas = res_dict['inf_betas']
                 sum_sqr_effects = sp.sum(updated_betas ** 2)
                 if sum_sqr_effects>gw_h2_ld_score_est:
-                    print 'Sum of squared updated effects estimates seems too large:', sum_sqr_effects
-                    print 'This suggests that the Gibbs sampler did not convergence.'
+                    print('Sum of squared updated effects estimates seems too large:', sum_sqr_effects)
+                    print('This suggests that the Gibbs sampler did not convergence.')
                 
-                print 'Calculating scores for Chromosome %s'%((chrom_str.split('_'))[1])
+                print('Calculating scores for Chromosome %s'%((chrom_str.split('_'))[1]))
                 updated_betas = updated_betas / (snp_stds.flatten())
                 updated_inf_betas = updated_inf_betas / (snp_stds.flatten())
                 annopred_effect_sizes.extend(updated_betas)
@@ -304,42 +304,42 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
                     r2 = corr ** 2
                     corr_inf = sp.corrcoef(y, prs_inf)[0, 1]
                     r2_inf = corr_inf ** 2
-#                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2)
-#                    print 'The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2_inf)
+#                    print('The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2))
+#                    print('The R2 prediction accuracy of PRS using %s was: %0.4f' %(chrom_str, r2_inf))
                     out.append('The R2 prediction accuracy of PRS using '+chrom_str+' was '+str(r2)+'\n')
                     out_inf.append('The R2 prediction accuracy of PRS using '+chrom_str+' was '+str(r2_inf)+'\n')
         
                     
-#        print 'There were %d (SNP) effects' % num_snps
+#        print('There were %d (SNP) effects' % num_snps)
         if has_phenotypes:
             num_indivs = len(y)
             results_dict[p_str]['y']=y
             results_dict[p_str]['risk_scores_pd']=risk_scores_pval_derived
-#            print 'Prediction accuracy was assessed using %d individuals.'%(num_indivs)
+#            print('Prediction accuracy was assessed using %d individuals.'%(num_indivs))
             out.append('Prediction accuracy was assessed using '+str(num_indivs)+' individuals\n')
             
             corr = sp.corrcoef(y, risk_scores_pval_derived)[0, 1]
             r2 = corr ** 2
             results_dict[p_str]['r2_pd']=r2
-#            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2, ((1-r2)**2)/num_indivs)
+#            print('The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2, ((1-r2)**2)/num_indivs))
             out.append('The  R2 prediction accuracy (observed scale) for the whole genome was: '+str(r2)+' ('+str(((1-r2)**2)/num_indivs)+')\n')
             
             corr_inf = sp.corrcoef(y, risk_scores_pval_derived_inf)[0, 1]
             r2_inf = corr_inf ** 2
             results_dict[p_str]['r2_pd']=r2_inf
-#            print 'The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2_inf, ((1-r2_inf)**2)/num_indivs)
+#            print('The  R2 prediction accuracy (observed scale) for the whole genome was: %0.4f (%0.6f)' % (r2_inf, ((1-r2_inf)**2)/num_indivs))
             out_inf.append('The  R2 prediction accuracy (observed scale) for the whole genome was: '+str(r2_inf)+' ('+str(((1-r2_inf)**2)/num_indivs)+')\n')
             
             if corr<0:
                 risk_scores_pval_derived = -1* risk_scores_pval_derived
             auc = pred_accuracy(y,risk_scores_pval_derived)
-            print 'AnnoPred AUC/COR for the whole genome was: %0.4f'%auc
+            print('AnnoPred AUC/COR for the whole genome was: %0.4f'%auc)
             out.append('AUC/COR for the whole genome was: '+str(auc)+'\n')
     
             if corr_inf<0:
                 risk_scores_pval_derived_inf = -1* risk_scores_pval_derived_inf
             auc_inf = pred_accuracy(y,risk_scores_pval_derived_inf)
-            print 'AnnoPred-inf AUC/COR for the whole genome was: %0.4f'%auc_inf
+            print('AnnoPred-inf AUC/COR for the whole genome was: %0.4f'%auc_inf)
             out_inf.append('AUC/COR for the whole genome was: '+str(auc_inf)+'\n')
     
             sp.savetxt('%s_y_'%(out_file_prefix)+str(p)+'.txt',y)
@@ -351,7 +351,7 @@ def annopred_genomewide(data_file=None, ld_radius = None, ld_dict=None, out_file
             y_norm = (y-sp.mean(y))/sp.std(y)
             numerator = sp.dot(risk_scores_pval_derived.T, y_norm)
             regression_slope = (numerator / denominator)#[0][0]
-#            print 'The slope for predictions with P-value derived  effects is:',regression_slope
+#            print('The slope for predictions with P-value derived  effects is:',regression_slope)
             out.append('The slope for predictions with P-value derived  effects is: '+str(regression_slope)+'\n')
             results_dict[p_str]['slope_pd']=regression_slope
     
@@ -477,12 +477,12 @@ def main(p_dict):
         chrom_ref_ld_mats = {}
         ld_score_sum = 0
         num_snps = 0
-        print 'Calculating LD information w. radius %d'% p_dict['ld_radius']
+        print('Calculating LD information w. radius %d'% p_dict['ld_radius'])
 
         cord_data_g = df['cord_data']
 
         for chrom_str in cord_data_g.keys():
-            print 'Working on %s'%chrom_str
+            print('Working on %s'%chrom_str)
             g = cord_data_g[chrom_str]
             if 'raw_snps_ref' in g.keys():
                 raw_snps = g['raw_snps_ref'][...]
@@ -515,22 +515,22 @@ def main(p_dict):
         avg_gw_ld_score = ld_score_sum / float(num_snps)
         ld_scores_dict = {'avg_gw_ld_score': avg_gw_ld_score, 'chrom_dict':chrom_ld_scores_dict}    
         
-        print 'Done calculating the LD table and LD score, writing to file:', local_ld_dict_file
-        print 'Genome-wide average LD score was:', ld_scores_dict['avg_gw_ld_score']
+        print('Done calculating the LD table and LD score, writing to file:', local_ld_dict_file)
+        print('Genome-wide average LD score was:', ld_scores_dict['avg_gw_ld_score'])
         ld_dict = {'ld_scores_dict':ld_scores_dict, 'chrom_ld_dict':chrom_ld_dict, 'chrom_ref_ld_mats':chrom_ref_ld_mats}
         f = gzip.open(local_ld_dict_file, 'wb')
         cPickle.dump(ld_dict, f, protocol=2)
         f.close()
-        print 'LD information is now pickled.'
+        print('LD information is now pickled.')
     else:
-        print 'Loading LD information from file: %s'%local_ld_dict_file
+        print('Loading LD information from file: %s'%local_ld_dict_file)
         f = gzip.open(local_ld_dict_file, 'r')
         ld_dict = cPickle.load(f)
         f.close()
 
     if p_dict['user_h2'] is not None:
-        print 'Starting calculation using user provided h2 files as priors'
-        print 'Loading prior information from file: %s'%p_dict['user_h2']
+        print('Starting calculation using user provided h2 files as priors')
+        print('Loading prior information from file: %s'%p_dict['user_h2'])
         with open(p_dict['user_h2']) as f:
             data = f.readlines()
         prf_chr = sp.empty(len(data),dtype='int8')
@@ -543,7 +543,7 @@ def main(p_dict):
             prf_sids.append(li[1]) 
             prf_pi[i] = p_dict['PS'][0]         
             prf_sigi2[i] = float(li[2]) 
-        print 'The input prior p is: ', p_dict['PS']
+        print('The input prior p is: ', p_dict['PS'])
         prf_sids = sp.array(prf_sids,dtype='str')
         prf = {}
         prf['chrom'] = prf_chr
@@ -556,8 +556,8 @@ def main(p_dict):
     else:
         #### no user-provided heritability files provided ####
         ##################### using hfile as prior #######################
-        print 'Starting calculation using h2 files as priors'
-        print 'Loading prior information from file: %s'%p_dict['hfile']
+        print('Starting calculation using h2 files as priors')
+        print('Loading prior information from file: %s'%p_dict['hfile'])
         with open(p_dict['hfile']) as f:
             data = f.readlines()
         prf_chr = sp.empty(len(data),dtype='int8')
@@ -570,7 +570,7 @@ def main(p_dict):
             prf_sids.append(li[1]) 
             prf_pi[i] = p_dict['PS'][0]         
             prf_sigi2[i] = float(li[2]) 
-        print 'The input prior p is: ', p_dict['PS']
+        print('The input prior p is: ', p_dict['PS'])
         prf_sids = sp.array(prf_sids,dtype='str')
         prf = {}
         prf['chrom'] = prf_chr
@@ -584,8 +584,8 @@ def main(p_dict):
                
         ##################### using pfile as prior #######################
         if p_dict['pfile'] is not None:
-            print 'Starting calculation using p_T files as priors' 
-            print 'Loading prior information from file: %s'%p_dict['pfile']
+            print('Starting calculation using p_T files as priors')
+            print('Loading prior information from file: %s'%p_dict['pfile'])
             with open(p_dict['pfile']) as f:
                 data = f.readlines()
             prf_chr = sp.empty(len(data),dtype='int8')
@@ -598,7 +598,7 @@ def main(p_dict):
                 prf_sids.append(li[1]) 
                 prf_pi[i] = float(li[2])         
                 prf_sigi2[i] = float(li[3]) 
-            print 'The input prior p is: ', p_dict['PS']
+            print('The input prior p is: ', p_dict['PS'])
             prf_sids = sp.array(prf_sids,dtype='str')
             prf = {}
             prf['chrom'] = prf_chr

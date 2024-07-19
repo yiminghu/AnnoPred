@@ -67,9 +67,9 @@ def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT, annot
     snp_chr1 = snp_chr[stt1]
     ### check order ###
     if sum(snp_chr1[:,2]==SNPids)==len(SNPids):
-        print 'Good!'
+        print('Good!')
     else:
-        print 'Shit happens, sorting ant1 to have the same order as SNPids'
+        print('Shit happens, sorting ant1 to have the same order as SNPids')
         O1 = np.argsort(snp_chr1[:,2])
         O2 = np.argsort(SNPids)
         O3 = np.argsort(O2)
@@ -106,14 +106,14 @@ def generate_h2_pT(h5py_file, LDSC_results_file, output_h2, PS, output_pT, annot
         tup_i = tuple(annot[i])
         M_T[tup_i] += 1
     edt = datetime.datetime.now()
-    print edt-bgt
+    print(edt-bgt)
     bgt = datetime.datetime.now()
     N_T = defaultdict(int)
     for i in range(ant1.shape[0]):
         tup_i = tuple(ant1[i])
         N_T[tup_i] += 1
     edt = datetime.datetime.now()
-    print edt-bgt
+    print(edt-bgt)
 
 
     H0 = np.dot(M,tau0)
@@ -180,9 +180,9 @@ def generate_h2_from_user(user_provided_h2, h5py_file, output):
     
     ### check order ###
     if sum(user_h2[:,1]==SNPids)==len(SNPids):
-        print 'Good!'
+        print('Good!')
     else:
-        print 'Shit happens, sorting user_h2 to have the same order as SNPids'
+        print('Shit happens, sorting user_h2 to have the same order as SNPids')
         O1 = np.argsort(user_h2[:,1])
         O2 = np.argsort(SNPids)
         O3 = np.argsort(O2)

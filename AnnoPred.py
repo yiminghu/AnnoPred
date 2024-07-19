@@ -172,31 +172,31 @@ def pdict_pred_user(pdict):
 def main(pdict):
   print(pdict)
   # Filter SNPs
-  print 'Filtering Summary Stats...'
+  print('Filtering Summary Stats...')
   org_sumstats = pdict['sumstats']
   sumstats_filtered = tmp(pdict, "sumstats_filtered.txt")
   if not isfile(sumstats_filtered):
     pre_sumstats.get_1000G_snps(pdict['sumstats'], sumstats_filtered)
     pdict['sumstats'] = sumstats_filtered
   else:
-    print 'Filtered sumstats found, start coordinating genotypes...'
+    print('Filtered sumstats found, start coordinating genotypes...')
 
   # Generate coord_genotypes H5 file
-  print 'Coordinate summary stats and validation/reference genotype data...'
+  print('Coordinate summary stats and validation/reference genotype data...')
   if not isfile(pdict_coord_trimmed(pdict)['out']):
     coord_trimmed.main(pdict_coord_trimmed(pdict))
   else:
-    print 'Coord file already exists! Continue calculating priors...'
+    print('Coord file already exists! Continue calculating priors...')
 
   if pdict['need_LDSC']:
-    print 'User-provided heritability file not found. Generating priors...'
+    print('User-provided heritability file not found. Generating priors...')
 #    if isfile()
     ldsc_result = tmp(pdict, pdict['annotation_flag'])
     if not isfile(ldsc_result+'_ldsc.results'):
       LD_PyWrapper.callLDSC(
           org_sumstats, pdict['N'], ldsc_result+'_ldsc', pdict['annotation_flag'])
     else:
-      print 'LDSC results found! Continue calculating priors ...'
+      print('LDSC results found! Continue calculating priors ...')
     pdict['h2file'] = tmp(pdict, pdict['annotation_flag'] + "_ldsc_h2.txt")
     pdict['pTfile'] = tmp(pdict, pdict['annotation_flag'] + "_ldsc_pT"+str(pdict['P'])+".txt")
     ld_r = prior_generating.generate_h2_pT(
@@ -204,16 +204,16 @@ def main(pdict):
              pdict['h2file'], pdict['P'], pdict['pTfile'], pdict['annotation_flag'])
     if pdict['need_ld_radius']: 
       pdict['ld_radius'] = int(ld_r)
-    print 'Starting AnnoPred...'
+    print('Starting AnnoPred...')
     pred_main.main(pdict_pred_ldsc(pdict))
   else:
-    print 'User-provided heritability file found. Extracting SNPs in common...'
+    print('User-provided heritability file found. Extracting SNPs in common...')
     pdict['user_h2_trimmed'] = tmp(pdict, "user_h2_trimmed.txt")
     pdict['H2'], ld_r = prior_generating.generate_h2_from_user(
            pdict['user_h2'], pdict['coord_out'], pdict['user_h2_trimmed'])
     if pdict['need_ld_radius']:
       pdict['ld_radius'] = int(ld_r)
-    print 'Starting AnnoPred...'
+    print('Starting AnnoPred...')
     pred_main.main(pdict_pred_user(pdict))
 
 

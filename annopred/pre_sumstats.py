@@ -12,9 +12,9 @@ def get_1000G_snps(sumstats, out_file):
     rf1 = rf[ind2]
     ### check order ###
     if sum(sf1[:,1]==rf1[:,2])==len(rf1[:,2]):
-        print 'Good!'
+        print('Good!')
     else:
-        print 'Shit happens, sorting sf1 to have the same order as rf1'
+        print('Shit happens, sorting sf1 to have the same order as rf1')
         O1 = np.argsort(sf1[:,1])
         O2 = np.argsort(rf1[:,2])
         O3 = np.argsort(O2)
